@@ -1,0 +1,31 @@
+project_id = "farha"
+
+[functions.generate-lyrics]
+verify_jwt = false  # l'auth est vérifiée manuellement via getAuthedUser() pour un message d'erreur propre
+
+[functions.generate-music]
+verify_jwt = false
+
+[functions.music-status]
+verify_jwt = false
+
+[functions.unlock-song]
+verify_jwt = false
+
+[functions.get-download-url]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false  # authentifié par la signature Stripe, pas par un JWT Supabase
+
+[functions.paypal-webhook]
+verify_jwt = false  # authentifié par la vérification de signature PayPal
+
+[functions.fedapay-webhook]
+verify_jwt = false  # authentifié par la signature HMAC Fedapay
+
+[functions.send-welcome-email]
+verify_jwt = false  # appelé par le Database Webhook interne Supabase

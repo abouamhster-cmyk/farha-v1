@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+@layer utilities {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold rounded-lg px-8 py-4 shadow-[0_12px_30px_rgba(184,58,40,0.35)] transition-all hover:-translate-y-0.5;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 border border-emerald text-emerald font-bold rounded-lg px-6 py-3 transition-all hover:bg-emerald hover:text-white;
+  }
+  .input-field {
+    @apply w-full rounded-xl border border-line bg-white px-4 py-3.5 text-base outline-none transition-colors focus:border-emerald;
+  }
+}
