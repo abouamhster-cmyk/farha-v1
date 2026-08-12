@@ -5,8 +5,8 @@ import { supabase, callFunction } from "../lib/supabaseClient.js";
 import {
   Music, Disc3, CheckCircle2, Clock, Pen, FileText, Headphones,
   AlertTriangle, Loader2, PlusCircle, Sparkles, Mic2,
-  Heart, GraduationCap, Baby, Gift, PartyPopper, Star, ChevronRight, ArrowRight,
-  Video, Store, Laugh, ShieldCheck, Zap
+  Heart, Baby, Gift, PartyPopper, ChevronRight, ArrowRight,
+  Video, Store, Laugh, Search, Filter, RotateCcw, Crown, ShieldCheck, Zap
 } from "lucide-react";
 
 const STATUS_CONFIG = {
@@ -39,6 +39,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
 
+  // ÉTATS DE FILTRES ET RECHERCHE
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+
   async function loadSongs() {
     const { data } = await supabase.from("songs").select("*").order("created_at", { ascending: false });
     setSongs(data ?? []);
@@ -47,7 +53,6 @@ export default function Dashboard() {
 
   useEffect(() => { loadSongs(); }, [user?.id]);
 
-  // VÉRIFICATION EN DEUX TEMPS DU RETOUR DE PAIEMENT (INSTANTANÉE + DELAYED)
   useEffect(() => {
     const checkoutStatus = searchParams.get("checkout");
     const fedapayStatus = searchParams.get("status");
@@ -74,6 +79,41 @@ export default function Dashboard() {
     }
   }, [searchParams]);
 
+  // LOGIQUE DE FILTRAGE DYNAMIQUE
+  const filteredSongs = songs.filter((song) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const title = (song.occasion || "").toLowerCase();
+      const target = (song.recipient_name || "").toLowerCase();
+      const brief = (song.brief || "").toLowerCase();
+      const dialect = (song.dialect || "").toLowerCase();
+      const style = (song.music_style || "").toLowerCase();
+
+      if (!title.includes(q) && !target.includes(q) && !brief.includes(q) && !dialect.includes(q) && !style.includes(q)) {
+        return false;
+      }
+    }
+
+    if (selectedCategory !== "all") {
+      const occ = (song.occasion || "").toLowerCase();
+      if (selectedCategory === "tiktok" && !occ.includes("tiktok") && !occ.includes("reel")) return false;
+      if (selectedCategory === "pub" && !occ.includes("pub") && !occ.includes("business") && !occ.includes("commerce")) return false;
+      if (selectedCategory === "humour" && !occ.includes("humour") && !occ.includes("parodie") && !occ.includes("meme")) return false;
+      if (selectedCategory === "fete" && !occ.includes("mariage") && !occ.includes("fête") && !occ.includes("anniversaire") && !occ.includes("naissance")) return false;
+    }
+
+    if (selectedStatus !== "all") {
+      if (selectedStatus === "ready" && song.status !== "completed" && song.status !== "preview_ready") return false;
+      if (selectedStatus === "generating" && song.status !== "music_generating" && song.status !== "lyrics_generating") return false;
+    }
+
+    return true;
+  }).sort((a, b) => {
+    if (sortBy === "oldest") return new Date(a.created_at) - new Date(b.created_at);
+    if (sortBy === "title") return (a.occasion || "").localeCompare(b.occasion || "");
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+
   const credits = profile?.credits ?? 0;
   const firstName = profile?.full_name?.split(" ")[0] ?? "";
   const hour = new Date().getHours();
@@ -95,14 +135,13 @@ export default function Dashboard() {
 
       {/* HEADER BANNIÈRE STUDIO SOMBRE & LUMINEUSE */}
       <div className="relative rounded-3xl p-6 sm:p-10 shadow-xl overflow-hidden border border-safran/30 text-white bg-[#0C0F0E]">
-        {/* Halo lumineux d'arrière-plan */}
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-safran/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald/20 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-safran">
-              <span className="w-2 h-2 rounded-full bg-safran animate-pulse" />
+              <Crown size={14} className="text-safran" />
               {greeting}, {firstName || "Créateur"}
             </div>
             <h1 className="font-display text-2xl sm:text-4xl font-bold flex items-center gap-3 flex-wrap">
@@ -127,7 +166,6 @@ export default function Dashboard() {
 
       {/* COMPTEURS CARTES AVEC LUEURS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        {/* Crédits */}
         <div className="bg-white border border-safran/30 rounded-2xl p-5 sm:p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
           <div className="w-13 h-13 rounded-2xl bg-safran/15 text-safran flex items-center justify-center flex-shrink-0 shadow-inner">
             <Sparkles size={26} />
@@ -141,7 +179,6 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Musiques Composées */}
         <div className="bg-white border border-line rounded-2xl p-5 sm:p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
           <div className="w-13 h-13 rounded-2xl bg-emerald/10 text-emerald flex items-center justify-center flex-shrink-0">
             <Disc3 size={26} />
@@ -152,7 +189,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Prêtes à Télécharger */}
         <div className="bg-white border border-line rounded-2xl p-5 sm:p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
           <div className="w-13 h-13 rounded-2xl bg-emerald/15 text-emerald flex items-center justify-center flex-shrink-0">
             <CheckCircle2 size={26} />
@@ -164,11 +200,98 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* PANNEAU DE RECHERCHE, SÉLECTEURS & FILTRES VECTORIELS */}
+      {songs.length > 0 && (
+        <div className="bg-white border border-line rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row items-center gap-3">
+            <div className="relative flex-1 w-full">
+              <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+              <input
+                type="text"
+                className="input-field pl-10 text-xs sm:text-sm"
+                placeholder="Rechercher par prénom, marque, sujet, style ou dialecte..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink text-xs font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="input-field text-xs sm:text-sm cursor-pointer w-full md:w-48 font-medium"
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="ready">Audio Prêt (Prêts)</option>
+              <option value="generating">En cours de création</option>
+            </select>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="input-field text-xs sm:text-sm cursor-pointer w-full md:w-44 font-medium"
+            >
+              <option value="newest">Plus récentes d'abord</option>
+              <option value="oldest">Plus anciennes d'abord</option>
+              <option value="title">A - Z (Ordre alphabétique)</option>
+            </select>
+          </div>
+
+          {/* Chips de catégories avec icônes vectorielles Lucide */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {[
+              { id: "all", label: "Toutes les catégories", Icon: Filter },
+              { id: "tiktok", label: "TikTok & Reels", Icon: Video },
+              { id: "pub", label: "Pub & Business", Icon: Store },
+              { id: "humour", label: "Humour & Memes", Icon: Laugh },
+              { id: "fete", label: "Mariage & Fêtes", Icon: PartyPopper },
+            ].map((cat) => {
+              const active = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    active
+                      ? "bg-safran text-ink shadow-xs"
+                      : "bg-cream text-muted hover:bg-line hover:text-ink"
+                  }`}
+                >
+                  <cat.Icon size={14} className={active ? "text-ink" : "text-emerald"} />
+                  <span>{cat.label}</span>
+                </button>
+              );
+            })}
+
+            {(searchQuery || selectedCategory !== "all" || selectedStatus !== "all" || sortBy !== "newest") && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("all");
+                  setSelectedStatus("all");
+                  setSortBy("newest");
+                }}
+                className="ml-auto text-xs font-bold text-henne hover:underline flex items-center gap-1 flex-shrink-0 cursor-pointer"
+              >
+                <RotateCcw size={12} /> Réinitialiser
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* SECTION MES MUSIQUES */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Music size={22} className="text-safran" /> Vos Réalisations Musicales
+            <Music size={22} className="text-safran" /> Vos Réalisations Musicales ({filteredSongs.length})
           </h2>
           {songs.length > 0 && (
             <Link to="/creer" className="text-xs sm:text-sm font-bold text-emerald hover:text-emerald-light transition-colors flex items-center gap-1.5 bg-emerald/10 px-4 py-2 rounded-xl border border-emerald/20">
@@ -197,9 +320,24 @@ export default function Dashboard() {
               Lancer ma première création <ArrowRight size={18} />
             </Link>
           </div>
+        ) : filteredSongs.length === 0 ? (
+          <div className="bg-white border border-line rounded-3xl text-center py-12 px-6 shadow-sm space-y-3">
+            <p className="font-bold text-base">Aucune musique ne correspond à vos filtres.</p>
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedCategory("all");
+                setSelectedStatus("all");
+                setSortBy("newest");
+              }}
+              className="text-xs font-bold text-safran hover:underline inline-flex items-center gap-1 bg-safran/10 px-4 py-2 rounded-xl border border-safran/20 cursor-pointer"
+            >
+              <RotateCcw size={14} /> Réinitialiser les filtres
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {songs.map((song) => {
+            {filteredSongs.map((song) => {
               const status = STATUS_CONFIG[song.status] ?? STATUS_CONFIG.draft;
               const OccIcon = getOccasionIcon(song.occasion);
               const isAnimated = song.status === "lyrics_generating" || song.status === "music_generating";

@@ -11,19 +11,19 @@ import {
 
 const DIALECTS = [
   // Maghreb
-  { value: "marocain", label: "🇲🇦 Darija marocaine (المغربية)" },
-  { value: "algerien", label: "🇩🇿 Darija algérienne (الجزائرية)" },
-  { value: "tunisien", label: "🇹🇳 Darija tunisienne (التونسية)" },
-  { value: "libyen", label: "🇱🇾 Lahja libyenne (الليبية)" },
-  { value: "mauritaniene", label: "🇲🇷 Hassanya mauritanienne (الحسانية)" },
+  { value: "marocain", label: "Darija marocaine (المغربية)" },
+  { value: "algerien", label: "Darija algérienne (الجزائرية)" },
+  { value: "tunisien", label: "Darija tunisienne (التونسية)" },
+  { value: "libyen", label: "Lahja libyenne (الليبية)" },
+  { value: "mauritaniene", label: "Hassanya mauritanienne (الحسانية)" },
   
   // Égypte & Moyen-Orient
-  { value: "egyptien", label: "🇪🇬 Égyptien (المصرية - Masri)" },
-  { value: "levantin", label: "🇱🇧 Levantin / Shami (الشامية)" },
-  { value: "khaleeji", label: "🇸🇦 Golfe / Khaleeji (الخليجية)" },
+  { value: "egyptien", label: "Égyptien (المصرية - Masri)" },
+  { value: "levantin", label: "Levantin / Shami (الشامية)" },
+  { value: "khaleeji", label: "Golfe / Khaleeji (الخليجية)" },
 
   // Arabe Littéraire
-  { value: "fusha", label: "📜 Arabe Poétique / Fusha (الفصحى)" },
+  { value: "fusha", label: "Arabe Poétique / Fusha (الفصحى)" },
 ];
 
 const STYLES = [
@@ -53,10 +53,10 @@ const CATEGORIES = [
   { id: "Mariage / Fête", label: "Mariage & Fêtes", Icon: PartyPopper, desc: "Célébrations" },
 ];
 
-// 12 MODÈLES PRÉ-REMPLIS EXPLICITES
+// MODÈLES DE PROMPTS PURGÉS DES ÉMOJIS
 const EXPLICIT_PROMPT_TEMPLATES = [
   {
-    label: "🎬 Vlog Voyage Marrakech",
+    label: "Vlog Voyage Marrakech",
     category: "TikTok / Reels",
     style: "rai",
     dialect: "marocain",
@@ -65,7 +65,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Musique ensoleillée et rythmée pour un vlog de voyage à Marrakech. Parler des ruelles de la Médina, du thé à la menthe, du soleil et des fous rires entre amis.",
   },
   {
-    label: "🛍️ Pub Marque Vêtements 'Atlas Wear'",
+    label: "Pub Marque Vêtements 'Atlas Wear'",
     category: "Pub / Business",
     style: "pop",
     dialect: "marocain",
@@ -74,7 +74,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Jingle commercial moderne et stylé pour la marque 'Atlas Wear'. Mettre en avant la nouvelle collection d'été, le style unique, la qualité et la livraison rapide.",
   },
   {
-    label: "😂 Le Pote Retardataire",
+    label: "Le Pote Retardataire",
     category: "Humour / Parodie",
     style: "rap",
     dialect: "marocain",
@@ -83,7 +83,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Chanson parodique et drôle sur mon meilleur ami Youssef qui arrive toujours 1 heure en retard avec son verre de café à la main et ses excuses bidons.",
   },
   {
-    label: "👰 Mariage (Dkhla العروسة)",
+    label: "Mariage (Dkhla العروسة)",
     category: "Mariage / Fête",
     style: "chaabi",
     dialect: "marocain",
@@ -92,7 +92,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Chanson festive et majestueuse en chaâbi pour l'entrée des mariés Reda et Sara. Célébrer leur amour, la beauté de la mariée, la joie des familles et faire danser les invités.",
   },
   {
-    label: "🎂 Anniversaire 60 ans Maman",
+    label: "Anniversaire 60 ans Maman",
     category: "Mariage / Fête",
     style: "chaabi",
     dialect: "marocain",
@@ -101,7 +101,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Chanson très émouvante et joyeuse pour les 60 ans de Maman Fatima. La remercier pour ses sacrifices, sa cuisine incroyable et lui souhaiter longue vie et santé.",
   },
   {
-    label: "☕ Pub Café / Restaurant 'Al Medina'",
+    label: "Pub Café / Restaurant 'Al Medina'",
     category: "Pub / Business",
     style: "gnawa",
     dialect: "marocain",
@@ -110,7 +110,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Chanson d'ambiance chaleureuse pour promouvoir le café 'Al Medina'. Parler des petits-déjeuners gourmands, du bon café, du tajine du midi et de l'accueil familial.",
   },
   {
-    label: "⚽ Match de Foot entre Potes",
+    label: "Match de Foot entre Potes",
     category: "Humour / Parodie",
     style: "rai",
     dialect: "algerien",
@@ -119,7 +119,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Chanson humoristique en raï sur nos matchs de foot du dimanche. Parler des ratés devant le but, des discussions passionnées et du thé d'après-match.",
   },
   {
-    label: "👶 Naissance Bébé Sofia",
+    label: "Naissance Bébé Sofia",
     category: "Mariage / Fête",
     style: "acoustique",
     dialect: "tunisien",
@@ -128,7 +128,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Berceuse douce et joyeuse pour la naissance de la petite Sofia. Souhaiter la bienvenue au bébé, féliciter les jeunes parents et célébrer ce bonheur.",
   },
   {
-    label: "🎓 Réussite au Diplôme / Master",
+    label: "Réussite au Diplôme / Master",
     category: "Mariage / Fête",
     style: "rai",
     dialect: "algerien",
@@ -137,7 +137,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Chanson de fierté et de fête en raï pour la réussite au Master de Yassine. Saluer ses efforts, ses nuits de révision et faire la fête en famille.",
   },
   {
-    label: "💄 Pub Produit Cosmétique 'Argan Glow'",
+    label: "Pub Produit Cosmétique 'Argan Glow'",
     category: "Pub / Business",
     style: "pop",
     dialect: "marocain",
@@ -146,7 +146,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Son pop doux et élégant pour une marque de produits de beauté naturels à l'huile d'argan. Mettre en avant l'éclat de la peau et le bien-être.",
   },
   {
-    label: "📱 Storytime Tendance TikTok",
+    label: "Storytime Tendance TikTok",
     category: "TikTok / Reels",
     style: "rap",
     dialect: "marocain",
@@ -155,7 +155,7 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Son dynamique pour une vidéo TikTok storytime. Raconter une journée mouvementée au travail avec de l'humour et de l'énergie en darija.",
   },
   {
-    label: "🚗 Roadtrip Vacances",
+    label: "Roadtrip Vacances",
     category: "TikTok / Reels",
     style: "rai",
     dialect: "algerien",
@@ -437,7 +437,6 @@ export default function CreateSong() {
       {step === 1 && (
         <form onSubmit={hasExistingLyrics ? handleResubmitIdea : handleCreateDraft} className="bg-white border border-line rounded-3xl p-6 sm:p-10 space-y-7 shadow-sm">
           
-          {/* Header avec Badge Lumineux */}
           <div className="flex items-start justify-between flex-wrap gap-4 border-b border-line pb-5">
             <div>
               <div className="inline-flex items-center gap-1.5 bg-safran/10 text-safran border border-safran/20 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
@@ -494,7 +493,7 @@ export default function CreateSong() {
             </div>
           </details>
 
-          {/* 1. Usage Principal (Catégories Interactives) */}
+          {/* 1. Usage Principal */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-3">1. Usage principal</label>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -574,7 +573,7 @@ export default function CreateSong() {
             />
           </div>
 
-          {/* BOUTON GÉANT ET LUMINEUX */}
+          {/* BOUTON GÉANT */}
           <button type="submit" disabled={loading || !online} className="w-full flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-henne/40 transition-all text-base sm:text-lg disabled:opacity-50 cursor-pointer border border-white/10">
             {loading
               ? <><Loader2 size={20} className="animate-spin" /> {hasExistingLyrics ? "Régénération des paroles..." : "Rédaction des paroles par le studio..."}</>
