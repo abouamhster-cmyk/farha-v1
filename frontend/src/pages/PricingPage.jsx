@@ -16,18 +16,38 @@ export default function PricingPage() {
   useEffect(() => {
     supabase
       .from("pricing_packs")
-      .select("id, label, song_count, price_cents")
+      .select("id, label, song_count, price_cents, max_duration_seconds, support_tier, commercial_use")
       .eq("active", true)
       .then(({ data }) => {
         if (!data) return;
+        const SUPPORT_LABELS = {
+          email_48h: "Email sous 48h",
+          email_24h: "Email sous 24h",
+          priority_12h: "Prioritaire sous 12h",
+          whatsapp_7j7: "WhatsApp 7j/7",
+        };
+        const formatDuration = (seconds) => {
+          if (!seconds) return "1 min 30";
+          const m = Math.floor(seconds / 60);
+          const s = seconds % 60;
+          return s > 0 ? `${m} min ${s}` : `${m} min`;
+        };
         const merged = data
-          .map((pack) => ({
-            id: pack.id,
-            songs: pack.song_count,
-            price: formatEuros(pack.price_cents),
-            perSong: formatEuros(Math.round(pack.price_cents / pack.song_count)),
-            ...PLAN_CONTENT[pack.id],
-          }))
+          .map((pack) => {
+            const content = PLAN_CONTENT[pack.id] || {};
+            return {
+              id: pack.id,
+              songs: pack.song_count,
+              price: formatEuros(pack.price_cents),
+              perSong: formatEuros(Math.round(pack.price_cents / pack.song_count)),
+              ...content,
+              benefits: {
+                duration: formatDuration(pack.max_duration_seconds),
+                support: SUPPORT_LABELS[pack.support_tier] || content.benefits?.support || "Email",
+                commercial: pack.commercial_use ?? content.benefits?.commercial ?? false,
+              },
+            };
+          })
           .filter((p) => p.name)
           .sort((a, b) => PLAN_ORDER.indexOf(a.id) - PLAN_ORDER.indexOf(b.id));
         setPlans(merged);

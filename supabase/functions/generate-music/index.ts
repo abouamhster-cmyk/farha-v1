@@ -9,6 +9,7 @@ import { truncateAudioBytes } from "../_shared/audioTruncate.ts";
 const PREVIEW_SECONDS = 30;
 const GEMINI_RETRIES = 2;
 const FREE_GENERATIONS_PER_DAY = Number(Deno.env.get("FREE_GENERATIONS_PER_DAY") ?? "1");
+const DEFAULT_FREE_DURATION = 60;
 
 const STYLE_PROMPTS: Record<string, string> = {
   chaabi: "Traditional and festive Moroccan/Algerian chaabi music. Bendir frame drum, derbouka, traditional percussion, handclaps. Festive party atmosphere, 120 BPM.",
@@ -49,7 +50,13 @@ function sanitizeForLyria(text: string): string {
     .trim();
 }
 
-function buildMusicPrompt(stylePrompt: string, voicePrompt: string, lyrics: string): string {
+function formatTimestamp(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s < 10 ? "0" : ""}${s}`;
+}
+
+function buildMusicPrompt(stylePrompt: string, voicePrompt: string, lyrics: string, maxDurationSeconds: number): string {
   const cleanLyrics = sanitizeForLyria(lyrics);
   const lines = cleanLyrics
     .split("\n")
@@ -57,6 +64,7 @@ function buildMusicPrompt(stylePrompt: string, voicePrompt: string, lyrics: stri
     .filter((l: string) => l.length > 0);
 
   const totalLines = lines.length;
+  const d = maxDurationSeconds;
 
   const verse1End = Math.min(Math.ceil(totalLines * 0.25), totalLines);
   const chorusEnd = Math.min(verse1End + Math.ceil(totalLines * 0.2), totalLines);
@@ -69,45 +77,81 @@ function buildMusicPrompt(stylePrompt: string, voicePrompt: string, lyrics: stri
   const chorus2 = lines.slice(verse2End, chorus2End).join("\n");
   const outro = lines.slice(chorus2End).join("\n") || chorus1;
 
+  const tIntro = Math.round(d * 0.08);
+  const tVerse1 = Math.round(d * 0.30);
+  const tChorus1 = Math.round(d * 0.50);
+  const tVerse2 = Math.round(d * 0.68);
+  const tChorus2 = Math.round(d * 0.85);
+  const minDuration = Math.round(d * 0.85);
+  const minDurationFormatted = `${Math.floor(minDuration / 60)}:${(minDuration % 60).toString().padStart(2, "0")}`;
+  const maxDurationFormatted = formatTimestamp(d);
+
   return `${stylePrompt} ${voicePrompt}
 
 Composition Breakdown & Timestamps:
 
-[0:00 - 0:15] Intro
+[0:00 - ${formatTimestamp(tIntro)}] Intro
 Intensity: 3/10
 Instrumental opening. ${stylePrompt} Gentle start building atmosphere. No vocals yet.
 
-[0:15 - 0:55] Verse 1
+[${formatTimestamp(tIntro)} - ${formatTimestamp(tVerse1)}] Verse 1
 Intensity: 5/10
 ${voicePrompt} Singing with clear emotional rhythm over the instrumental bed.
 Lyrics:
 ${verse1}
 
-[0:55 - 1:30] Chorus
+[${formatTimestamp(tVerse1)} - ${formatTimestamp(tChorus1)}] Chorus
 Intensity: 8/10
 Full energy, catchy memorable melody, all instruments in. Strong hook.
 Lyrics:
 ${chorus1}
 
-[1:30 - 2:05] Verse 2
+[${formatTimestamp(tChorus1)} - ${formatTimestamp(tVerse2)}] Verse 2
 Intensity: 5/10
 Second verse, same melodic pattern as verse 1 with slight variations.
 Lyrics:
 ${verse2}
 
-[2:05 - 2:35] Chorus (Reprise & Bridge)
+[${formatTimestamp(tVerse2)} - ${formatTimestamp(tChorus2)}] Chorus (Reprise & Bridge)
 Intensity: 9/10
 Peak energy, fuller arrangement than first chorus, maximum emotional impact.
 Lyrics:
 ${chorus2}
 
-[2:35 - 3:00] Outro / Fade Out
+[${formatTimestamp(tChorus2)} - ${maxDurationFormatted}] Outro / Fade Out
 Intensity: 4/10 → 1/10
-Final section starting at 2:35. Gradual wind-down. Instruments drop out one by one. Vocals fade softly. The song MUST conclude naturally with a final sustained note or resolving chord that fades into COMPLETE SILENCE before 3:00. Do NOT cut off mid-phrase.
+Final section. Gradual wind-down. Instruments drop out one by one. Vocals fade softly. The song MUST conclude naturally with a final sustained note or resolving chord that fades into COMPLETE SILENCE before ${maxDurationFormatted}. Do NOT cut off mid-phrase.
 Lyrics:
 ${outro}
 
-CRITICAL: Expand the song duration naturally to fill between 2:30 and 3:00 minutes total. Vocal pacing must be clear and natural to fit all lyrics. Conclude with an intentional fade-out to silence.`;
+CRITICAL: Expand the song duration naturally to fill between ${minDurationFormatted} and ${maxDurationFormatted} minutes total. Vocal pacing must be clear and natural to fit all lyrics. Conclude with an intentional fade-out to silence.`;
+}
+
+async function getUserMaxDuration(admin: any, userId: string): Promise<number> {
+  try {
+    const { data: orders } = await admin
+      .from("orders")
+      .select("pack_id")
+      .eq("user_id", userId)
+      .eq("status", "paid")
+      .order("created_at", { ascending: false });
+
+    if (!orders || orders.length === 0) return DEFAULT_FREE_DURATION;
+
+    const packIds = [...new Set(orders.map((o: any) => o.pack_id))];
+    const { data: packs } = await admin
+      .from("pricing_packs")
+      .select("id, max_duration_seconds")
+      .in("id", packIds);
+
+    if (!packs || packs.length === 0) return DEFAULT_FREE_DURATION;
+
+    const maxDuration = Math.max(...packs.map((p: any) => p.max_duration_seconds ?? DEFAULT_FREE_DURATION));
+    return maxDuration;
+  } catch (err) {
+    console.warn("getUserMaxDuration error, using default:", err);
+    return DEFAULT_FREE_DURATION;
+  }
 }
 
 interface LyriaResult {
@@ -293,7 +337,8 @@ Deno.serve(async (req: Request) => {
 
     const stylePrompt = STYLE_PROMPTS[song.music_style] ?? STYLE_PROMPTS.chaabi;
     const voicePrompt = VOICE_PROMPTS[song.voice_type] ?? VOICE_PROMPTS.homme;
-    const prompt = buildMusicPrompt(stylePrompt, voicePrompt, song.lyrics);
+    const maxDuration = await getUserMaxDuration(admin, user.id);
+    const prompt = buildMusicPrompt(stylePrompt, voicePrompt, song.lyrics, maxDuration);
 
     let result: LyriaResult | null = null;
     let geminiBlocked = false;
@@ -354,7 +399,7 @@ Deno.serve(async (req: Request) => {
         status: finalStatus,
         preview_audio_path: previewStoragePath,
         full_audio_path: fullStoragePath,
-        duration_seconds: approxDuration > 0 ? approxDuration : 170,
+        duration_seconds: approxDuration > 0 ? approxDuration : maxDuration,
         image_path: imagePath,
       })
       .eq("id", songId)

@@ -14,7 +14,6 @@ Deno.serve(async (req: Request) => {
     const { transactionId } = await req.json();
     const admin = getSupabaseAdmin();
 
-    // 1. Chercher la commande pending de cet utilisateur
     let query = admin
       .from("orders")
       .select("*")
@@ -25,11 +24,10 @@ Deno.serve(async (req: Request) => {
       query = query.eq("provider_session_id", String(transactionId));
     }
 
-    const { data: orders, error: orderErr } = await query.order("created_at", { ascending: false });
+    const { data: orders } = await query.order("created_at", { ascending: false });
 
     let orderToProcess = orders && orders.length > 0 ? orders[0] : null;
 
-    // Si aucune commande spécifique trouvée avec cet ID, prendre la toute dernière commande pending
     if (!orderToProcess) {
       const { data: latestPending } = await admin
         .from("orders")
@@ -47,36 +45,23 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ message: "Aucune commande en attente à valider." }, 200);
     }
 
-    // 2. Marquer la commande comme terminée/payée
     await admin
       .from("orders")
-      .update({ status: "completed" })
+      .update({ status: "paid", paid_at: new Date().toISOString() })
       .eq("id", orderToProcess.id);
 
-    // 3. Ajouter les crédits au profil de l'utilisateur
-    const { error: creditErr } = await admin.rpc("add_profile_credits", {
+    const { error: creditErr } = await admin.rpc("increment_profile_credits", {
       p_user_id: user.id,
       p_amount: orderToProcess.songs_granted,
     });
 
     if (creditErr) {
-      console.warn("RPC add_profile_credits note, fallback direct:", creditErr);
-      const { data: profile } = await admin
-        .from("profiles")
-        .select("credits")
-        .eq("id", user.id)
-        .single();
-      
-      const currentCredits = profile?.credits ?? 0;
-      await admin
-        .from("profiles")
-        .update({ credits: currentCredits + orderToProcess.songs_granted })
-        .eq("id", user.id);
+      console.error("Erreur increment_profile_credits:", creditErr);
+      return jsonResponse({ error: "Erreur lors de l'ajout des crédits" }, 500);
     }
 
-    console.log(`Paiement validé instantanément pour ${user.id}. +${orderToProcess.songs_granted} crédits !`);
+    console.log(`Paiement validé pour ${user.id}. +${orderToProcess.songs_granted} crédits`);
 
-    // 4. Récupérer le solde mis à jour
     const { data: updatedProfile } = await admin
       .from("profiles")
       .select("credits")

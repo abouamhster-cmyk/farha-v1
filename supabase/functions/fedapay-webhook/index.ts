@@ -29,20 +29,17 @@ Deno.serve(async (req: Request) => {
       .eq("id", orderId)
       .single();
 
-    if (orderErr || !order || order.status === "completed") {
+    if (orderErr || !order || order.status === "paid") {
       return jsonResponse({ message: "Commande déjà traitée ou introuvable" }, 200);
     }
 
     // 4. TRANSACTION RÉUSSIE : Créditer l'utilisateur
-    // On met à jour la commande
     await admin
       .from("orders")
-      .update({ status: "completed" })
+      .update({ status: "paid", paid_at: new Date().toISOString(), provider_event_id: String(transaction.id) })
       .eq("id", orderId);
 
-    // On ajoute les crédits au profil de l'utilisateur via un RPC (ou update direct)
-    // Ici, nous utilisons une requête SQL pour incrémenter les crédits
-    const { error: creditErr } = await admin.rpc("add_profile_credits", {
+    const { error: creditErr } = await admin.rpc("increment_profile_credits", {
       p_user_id: order.user_id,
       p_amount: order.songs_granted,
     });
