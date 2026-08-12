@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { supabase } from "../lib/supabaseClient.js";
+import { supabase, callFunction } from "../lib/supabaseClient.js";
 import {
   Music, Disc3, CheckCircle2, Clock, Pen, FileText, Headphones,
   AlertTriangle, Loader2, PlusCircle, Sparkles, Mic2,
@@ -47,16 +47,30 @@ export default function Dashboard() {
 
   useEffect(() => { loadSongs(); }, [user?.id]);
 
-  // VÉRIFICATION EN DEUX TEMPS DU RETOUR DE PAIEMENT (INSTANTANÉE + DELAYED)
+  // VÉRIFICATION INSTANTANÉE AU RETOUR DE PAIEMENT
   useEffect(() => {
-    if (searchParams.get("checkout") === "success") {
-      refreshProfile(); // 1er rafraîchissement immédiat
-      
-      // 2ème rafraîchissement 1.8s plus tard pour laisser le temps au Webhook de créditer
+    const checkoutStatus = searchParams.get("checkout");
+    const fedapayStatus = searchParams.get("status");
+    const transactionId = searchParams.get("id");
+
+    if (checkoutStatus === "success" || fedapayStatus === "approved") {
+      // 1. Déclencher la validation automatique de la commande
+      callFunction("verify-payment", {
+        transactionId: transactionId || null,
+      }).then((res) => {
+        if (res?.success) {
+          refreshProfile();
+          loadSongs();
+        }
+      }).catch(() => {
+        refreshProfile();
+      });
+
+      // 2. Re-vérifier 1.5 seconde plus tard pour sécurité
       const timer = setTimeout(() => {
         refreshProfile();
         loadSongs();
-      }, 1800);
+      }, 1500);
 
       return () => clearTimeout(timer);
     }
@@ -72,7 +86,7 @@ export default function Dashboard() {
     <div className="px-5 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-7xl mx-auto">
 
       {/* Message de succès d'achat si retour de paiement */}
-      {searchParams.get("checkout") === "success" && (
+      {(searchParams.get("checkout") === "success" || searchParams.get("status") === "approved") && (
         <div className="bg-emerald/10 text-emerald rounded-2xl p-4 sm:p-5 mb-6 text-sm border border-emerald/20 flex items-center justify-between gap-3 animate-fade-in">
           <div className="flex items-center gap-2.5 font-bold">
             <CheckCircle2 size={20} className="text-emerald flex-shrink-0" />
@@ -155,7 +169,6 @@ export default function Dashboard() {
           </Link>
         </div>
       ) : (
-        /* Grille 3 colonnes sur desktop */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {songs.map((song) => {
             const status = STATUS_CONFIG[song.status] ?? STATUS_CONFIG.draft;
