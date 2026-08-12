@@ -9,7 +9,6 @@ import {
   Globe, ChevronLeft, AlertTriangle, Save, Wifi, WifiOff, Sparkles, Video, Store, Laugh, PartyPopper, Lightbulb, Mic, Users, Baby, CheckCircle2, ChevronDown
 } from "lucide-react";
 
-// --- LISTE COMPLÈTE DES 9 DIALECTES (MAGHREB + EGYPTE + MOYEN-ORIENT) ---
 const DIALECTS = [
   // Maghreb
   { value: "marocain", label: "🇲🇦 Darija marocaine (المغربية)" },
@@ -23,14 +22,14 @@ const DIALECTS = [
   { value: "levantin", label: "🇱🇧 Levantin / Shami (الشامية)" },
   { value: "khaleeji", label: "🇸🇦 Golfe / Khaleeji (الخليجية)" },
 
-  // Arabe Littéraire / Poétique
+  // Arabe Littéraire
   { value: "fusha", label: "📜 Arabe Poétique / Fusha (الفصحى)" },
 ];
 
 const STYLES = [
   { value: "chaabi", label: "Chaâbi Festif" },
   { value: "rai", label: "Raï Moderne / Club" },
-  { value: "rap", label: "Rap & Trap" },
+  { value: "rap", label: "Rap & Trap Darija" },
   { value: "pop", label: "Pop Orientale" },
   { value: "acoustique", label: "Acoustique / Chill" },
   { value: "gnawa", label: "Gnawa Fusion" },
@@ -54,7 +53,7 @@ const CATEGORIES = [
   { id: "Mariage / Fête", label: "Mariage & Fêtes", Icon: PartyPopper, desc: "Célébrations" },
 ];
 
-// --- MODÈLES DE PROMPTS REPLIABLES ---
+// 12 MODÈLES PRÉ-REMPLIS EXPLICITES
 const EXPLICIT_PROMPT_TEMPLATES = [
   {
     label: "🎬 Vlog Voyage Marrakech",
@@ -73,15 +72,6 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     voice: "femme",
     recipient: "Marque 'Atlas Wear'",
     text: "Jingle commercial moderne et stylé pour la marque 'Atlas Wear'. Mettre en avant la nouvelle collection d'été, le style unique, la qualité et la livraison rapide.",
-  },
-  {
-    label: "🇪🇬 Pub Égyptienne Produit Beauté",
-    category: "Pub / Business",
-    style: "pop",
-    dialect: "egyptien",
-    voice: "femme",
-    recipient: "Marque Beauty",
-    text: "Chanson joyeuse et rythmée en dialecte égyptien Masri pour promouvoir des produits cosmétiques. Ton chaleureux et dynamique.",
   },
   {
     label: "😂 Le Pote Retardataire",
@@ -147,13 +137,22 @@ const EXPLICIT_PROMPT_TEMPLATES = [
     text: "Chanson de fierté et de fête en raï pour la réussite au Master de Yassine. Saluer ses efforts, ses nuits de révision et faire la fête en famille.",
   },
   {
+    label: "💄 Pub Produit Cosmétique 'Argan Glow'",
+    category: "Pub / Business",
+    style: "pop",
+    dialect: "marocain",
+    voice: "femme",
+    recipient: "Marque 'Argan Glow'",
+    text: "Son pop doux et élégant pour une marque de produits de beauté naturels à l'huile d'argan. Mettre en avant l'éclat de la peau et le bien-être.",
+  },
+  {
     label: "📱 Storytime Tendance TikTok",
     category: "TikTok / Reels",
     style: "rap",
     dialect: "marocain",
     voice: "homme",
     recipient: "Storytime TikTok",
-    text: "Son dynamique pour une vidéo TikTok storytime. Raconter une journée mouvementée au travail avec de l'humour et de l'énergie.",
+    text: "Son dynamique pour une vidéo TikTok storytime. Raconter une journée mouvementée au travail avec de l'humour et de l'énergie en darija.",
   },
   {
     label: "🚗 Roadtrip Vacances",
@@ -251,8 +250,8 @@ export default function CreateSong() {
     try {
       const dialectLabel = DIALECTS.find(d => d.value === dialect)?.label || "darija";
       const direction = source === "darija"
-        ? `Traduis ces paroles de ${dialectLabel} vers le français. Garde le même nombre de lignes. Traduction fidèle ligne par ligne, pas d'explication.`
-        : `Traduis ces paroles du français vers la ${dialectLabel} (alphabet arabe). Garde le même nombre de lignes. Traduction fidèle ligne par ligne, pas d'explication.`;
+        ? `Traduis ces paroles de ${dialectLabel} vers le français. Garde le même nombre de lignes.`
+        : `Traduis ces paroles du français vers la ${dialectLabel} (alphabet arabe). Garde le même nombre de lignes.`;
 
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
@@ -271,11 +270,8 @@ export default function CreateSong() {
       if (!resp.ok) throw new Error("Traduction échouée");
       const json = await resp.json();
       if (json.translation) {
-        if (source === "darija") {
-          setLyricsFr(json.translation);
-        } else {
-          setLyrics(json.translation);
-        }
+        if (source === "darija") setLyricsFr(json.translation);
+        else setLyrics(json.translation);
       }
     } catch (err) {
       if (err.name !== "AbortError") console.warn("Translation error:", err);
@@ -285,11 +281,9 @@ export default function CreateSong() {
   }, []);
 
   function handleLyricsChange(source, value) {
-    if (source === "darija") {
-      setLyrics(value);
-    } else {
-      setLyricsFr(value);
-    }
+    if (source === "darija") setLyrics(value);
+    else setLyricsFr(value);
+
     if (translateTimer.current) clearTimeout(translateTimer.current);
     if (value.trim().length > 10) {
       translateTimer.current = setTimeout(() => {
@@ -363,11 +357,9 @@ export default function CreateSong() {
   async function handleGenerateLyrics(id) {
     setError("");
     const isRegen = !!(lyrics || lyricsFr);
-    if (isRegen) {
-      setRegeneratingLyrics(true);
-    } else {
-      setLoading(true);
-    }
+    if (isRegen) setRegeneratingLyrics(true);
+    else setLoading(true);
+
     try {
       const { song } = await callFunction("generate-lyrics", { songId: id ?? songId });
       setLyrics(song.lyrics ?? "");
@@ -419,7 +411,7 @@ export default function CreateSong() {
         </div>
       )}
 
-      {/* Stepper Propre & Aéré */}
+      {/* Stepper Propre */}
       <div className="bg-white border border-line rounded-3xl p-5 mb-8 shadow-sm flex items-center justify-between">
         {["1. L'idée & Le Style", "2. Les Paroles", "3. La Musique"].map((label, i) => (
           <div key={label} className="flex items-center gap-3 flex-1 justify-center">
@@ -444,10 +436,12 @@ export default function CreateSong() {
       {/* STEP 1 : BRIEF */}
       {step === 1 && (
         <form onSubmit={hasExistingLyrics ? handleResubmitIdea : handleCreateDraft} className="bg-white border border-line rounded-3xl p-6 sm:p-10 space-y-7 shadow-sm">
+          
+          {/* Header avec Badge Lumineux */}
           <div className="flex items-start justify-between flex-wrap gap-4 border-b border-line pb-5">
             <div>
-              <div className="inline-flex items-center gap-1.5 bg-safran/10 text-safran border border-safran/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-                <Sparkles size={12} /> Studio de Haute Création
+              <div className="inline-flex items-center gap-1.5 bg-safran/10 text-safran border border-safran/20 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+                <Sparkles size={13} /> Studio de Haute Création Musicale
               </div>
               <h1 className="font-display text-2xl sm:text-3xl font-bold">
                 {hasExistingLyrics ? "Modifier votre projet" : "Quelle est votre idée ?"}
@@ -460,8 +454,8 @@ export default function CreateSong() {
             </div>
           </div>
 
-          {/* SUGGESTIONS DE PROMPTS COMPACTES ET REPLIABLES (EN HAUT DU FORMULAIRE) */}
-          <details className="bg-cream/80 border border-line rounded-2xl overflow-hidden group">
+          {/* SUGGESTIONS DE PROMPTS REPLIABLES (EN HAUT) */}
+          <details className="bg-cream/80 border border-safran/30 rounded-2xl overflow-hidden group">
             <summary className="p-3.5 sm:p-4 font-bold text-xs sm:text-sm text-emerald cursor-pointer flex items-center justify-between list-none hover:bg-safran/10 transition-colors">
               <span className="flex items-center gap-2">
                 <Lightbulb size={18} className="text-safran" />
@@ -474,7 +468,7 @@ export default function CreateSong() {
 
             <div className="p-4 border-t border-line bg-white space-y-3">
               <label className="block text-xs font-bold text-muted">
-                Sélectionnez un modèle pour remplir automatiquement l'usage, le style, le dialecte et le message :
+                Sélectionnez un modèle pour remplir automatiquement l'usage, le style et le message :
               </label>
               <select
                 onChange={(e) => {
@@ -500,7 +494,7 @@ export default function CreateSong() {
             </div>
           </details>
 
-          {/* 1. Usage Principal (Catégories) */}
+          {/* 1. Usage Principal (Catégories Interactives) */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-3">1. Usage principal</label>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -511,8 +505,8 @@ export default function CreateSong() {
                     key={cat.id}
                     type="button"
                     onClick={() => setForm({ ...form, occasion: cat.id })}
-                    className={`p-4 rounded-2xl border text-left transition-all ${
-                      active ? "border-safran bg-safran/10 text-ink font-bold shadow-sm ring-2 ring-safran/30" : "border-line bg-white hover:border-emerald/40 text-muted"
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                      active ? "border-safran bg-safran/10 text-ink font-bold shadow-sm ring-2 ring-safran/30" : "border-line bg-white hover:border-safran/40 text-muted"
                     }`}
                   >
                     <cat.Icon size={22} className={active ? "text-safran mb-2" : "text-emerald mb-2"} />
@@ -528,13 +522,13 @@ export default function CreateSong() {
           <div className="grid sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">2. Dialecte & Langue</label>
-              <select className="input-field" value={form.dialect} onChange={(e) => setForm({ ...form, dialect: e.target.value })}>
+              <select className="input-field cursor-pointer font-medium" value={form.dialect} onChange={(e) => setForm({ ...form, dialect: e.target.value })}>
                 {DIALECTS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">3. Style musical</label>
-              <select className="input-field" value={form.music_style} onChange={(e) => setForm({ ...form, music_style: e.target.value })}>
+              <select className="input-field cursor-pointer font-medium" value={form.music_style} onChange={(e) => setForm({ ...form, music_style: e.target.value })}>
                 {STYLES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
@@ -551,8 +545,8 @@ export default function CreateSong() {
                     key={v.value}
                     type="button"
                     onClick={() => setForm({ ...form, voice_type: v.value })}
-                    className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1.5 ${
-                      active ? "border-safran bg-safran/10 text-ink font-bold shadow-sm ring-2 ring-safran/30" : "border-line bg-white hover:border-emerald/40 text-muted"
+                    className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+                      active ? "border-safran bg-safran/10 text-ink font-bold shadow-sm ring-2 ring-safran/30" : "border-line bg-white hover:border-safran/40 text-muted"
                     }`}
                   >
                     <v.Icon size={16} className={active ? "text-safran" : "text-emerald"} />
@@ -580,10 +574,11 @@ export default function CreateSong() {
             />
           </div>
 
-          <button type="submit" disabled={loading || !online} className="w-full flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold py-4 rounded-2xl shadow-md transition-all text-base sm:text-lg disabled:opacity-50 cursor-pointer">
+          {/* BOUTON GÉANT ET LUMINEUX */}
+          <button type="submit" disabled={loading || !online} className="w-full flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-henne/40 transition-all text-base sm:text-lg disabled:opacity-50 cursor-pointer border border-white/10">
             {loading
               ? <><Loader2 size={20} className="animate-spin" /> {hasExistingLyrics ? "Régénération des paroles..." : "Rédaction des paroles par le studio..."}</>
-              : <>{hasExistingLyrics ? "Régénérer les paroles avec cette idée" : "Générer les paroles gratuites"} <ArrowRight size={18} /></>}
+              : <>{hasExistingLyrics ? "Régénérer les paroles avec cette idée" : "Générer les paroles gratuites en 3 min"} <ArrowRight size={18} /></>}
           </button>
         </form>
       )}
@@ -596,7 +591,7 @@ export default function CreateSong() {
               <h1 className="font-display text-2xl font-bold">Vos paroles sur-mesure</h1>
               <p className="text-muted text-xs sm:text-sm">Relisez et modifiez librement. C'est 100% gratuit.</p>
             </div>
-            <button onClick={handleGoBackAndResubmit} className="text-xs font-semibold text-emerald hover:underline flex items-center gap-1 bg-cream px-3.5 py-2 rounded-xl border border-line">
+            <button onClick={handleGoBackAndResubmit} className="text-xs font-semibold text-emerald hover:underline flex items-center gap-1 bg-cream px-3.5 py-2 rounded-xl border border-line cursor-pointer">
               <ChevronLeft size={14} /> Modifier l'idée
             </button>
           </div>
@@ -607,7 +602,7 @@ export default function CreateSong() {
             </div>
           ) : loading && !lyrics ? (
             <div className="py-12">
-              <ProgressCircle estimatedSeconds={12} active={loading} size={90} label="Rédaction des paroles authentiques..." />
+              <ProgressCircle estimatedSeconds={12} active={loading} size={90} label="Rédaction des paroles en arabe authentique..." />
             </div>
           ) : (
             <>
@@ -626,7 +621,7 @@ export default function CreateSong() {
               <div className="flex border-b border-line items-center">
                 <button
                   onClick={() => setActiveTab("darija")}
-                  className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                  className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
                     activeTab === "darija" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
                   }`}
                 >
@@ -634,7 +629,7 @@ export default function CreateSong() {
                 </button>
                 <button
                   onClick={() => setActiveTab("french")}
-                  className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                  className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
                     activeTab === "french" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
                   }`}
                 >
