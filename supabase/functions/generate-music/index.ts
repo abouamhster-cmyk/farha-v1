@@ -307,7 +307,7 @@ Deno.serve(async (req: Request) => {
         });
         if (rpcErr) throw rpcErr;
         if (!consumed) {
-          return jsonResponse({ error: "Erreur lors de la consommation du crédit." }, 500);
+          return jsonResponse({ error: "Impossible de consommer le crédit. Veuillez réessayer." }, 500);
         }
         creditConsumed = true;
       } else {
@@ -359,7 +359,7 @@ Deno.serve(async (req: Request) => {
     if (!result) {
       const message = geminiBlocked
         ? "Ce contenu a été refusé par notre studio créatif (sujet sensible ou inapproprié). Modifiez votre description ou vos paroles et réessayer."
-        : "L'API de composition musicale Google n'a pas pu traiter la demande. Vérifiez vos crédits ou votre clé GEMINI_API_KEY.";
+        : "La composition musicale a échoué. Veuillez réessayer dans quelques instants.";
       throw new Error(message);
     }
 

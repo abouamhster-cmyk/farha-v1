@@ -202,7 +202,7 @@ export default function Dashboard() {
 
       {/* PANNEAU DE RECHERCHE, SÉLECTEURS & FILTRES VECTORIELS */}
       {songs.length > 0 && (
-        <div className="bg-white border border-line rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+        <div className="bg-white border border-line rounded-3xl p-4 sm:p-6 shadow-sm space-y-4 overflow-hidden">
           <div className="flex flex-col md:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
               <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
@@ -226,7 +226,7 @@ export default function Dashboard() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="input-field text-xs sm:text-sm cursor-pointer w-full md:w-48 font-medium"
+              className="input-field text-xs sm:text-sm cursor-pointer w-full md:w-48 min-w-0 font-medium"
             >
               <option value="all">Tous les statuts</option>
               <option value="ready">Audio Prêt (Prêts)</option>
@@ -236,7 +236,7 @@ export default function Dashboard() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="input-field text-xs sm:text-sm cursor-pointer w-full md:w-44 font-medium"
+              className="input-field text-xs sm:text-sm cursor-pointer w-full md:w-44 min-w-0 font-medium"
             >
               <option value="newest">Plus récentes d'abord</option>
               <option value="oldest">Plus anciennes d'abord</option>

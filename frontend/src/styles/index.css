@@ -18,27 +18,11 @@ html {
   }
 }
 
-.toast-enter {
-  animation: slideUp 0.35s ease-out, fadeIn 0.35s ease-out;
-}
-.toast-exit {
-  animation: fadeIn 0.2s ease-out reverse forwards;
-}
-
-.badge-lyrics {
-  @apply inline-flex items-center gap-1 bg-safran/10 text-safran border border-safran/20 px-2 py-0.5 rounded-full text-[0.65rem] font-bold;
-}
 .badge-music {
   @apply inline-flex items-center gap-1 bg-emerald/10 text-emerald border border-emerald/20 px-2 py-0.5 rounded-full text-[0.65rem] font-bold;
 }
 
-@keyframes float-note {
-  0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
-  100% { opacity: 0; transform: translateY(-50px) rotate(20deg) scale(0.6); }
-}
-
-.note-particle {
-  position: absolute;
-  animation: float-note 1.4s ease-out forwards;
-  pointer-events: none;
+select.input-field {
+  text-overflow: ellipsis;
+  padding-right: 2rem;
 }

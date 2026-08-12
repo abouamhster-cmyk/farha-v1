@@ -10,36 +10,6 @@ import {
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
-function MusicReadyAnimation({ show }) {
-  if (!show) return null;
-  const particles = Array.from({ length: 8 }, (_, i) => ({
-    id: i,
-    left: 10 + Math.random() * 80,
-    delay: Math.random() * 0.4,
-    size: 10 + Math.random() * 10,
-    char: i % 2 === 0 ? "♪" : "♫",
-  }));
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-20">
-      {particles.map((p) => (
-        <span
-          key={p.id}
-          className="note-particle"
-          style={{
-            left: `${p.left}%`,
-            bottom: "30%",
-            animationDelay: `${p.delay}s`,
-            fontSize: `${p.size}px`,
-            color: p.id % 3 === 0 ? "#E89528" : p.id % 3 === 1 ? "#0A3832" : "#B83A28",
-          }}
-        >
-          {p.char}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export default function SongDetail() {
   const { songId } = useParams();
   const { profile, refreshProfile } = useAuth();
@@ -52,7 +22,6 @@ export default function SongDetail() {
   const [regeneratingMusic, setRegeneratingMusic] = useState(false);
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const [activeLyricsTab, setActiveLyricsTab] = useState("darija");
-  const [musicJustReady, setMusicJustReady] = useState(false);
   const [unlockSuccess, setUnlockSuccess] = useState(false);
 
   const audioRef = useRef(null);
@@ -65,20 +34,14 @@ export default function SongDetail() {
     try {
       const { data, error: dbErr } = await supabase.from("songs").select("*").eq("id", songId).single();
       if (dbErr) throw dbErr;
-      setSong((prev) => {
-        if (prev?.status === "music_generating" && (data.status === "preview_ready" || data.status === "completed")) {
-          setMusicJustReady(true);
-          setTimeout(() => setMusicJustReady(false), 4000);
-        }
-        return data;
-      });
+      setSong(data);
       return data;
     } catch (err) {
       console.error(err);
     }
   }, [songId]);
 
-  useEffect(() => { loadSong(); }, [loadSong]);
+  useEffect(() => { loadSong(); refreshProfile(); }, [loadSong]);
 
   const songStatus = song?.status;
   const isUnlocked = songStatus === "completed" || songStatus === "purchased";
@@ -339,7 +302,7 @@ export default function SongDetail() {
               {song.occasion || "Projet Musical"}
             </span>
             {isUnlocked ? (
-              <span className="badge-music animate-popIn">
+              <span className="badge-music">
                 <Mic2 size={12} /> Musique Complète HD
               </span>
             ) : (
@@ -373,16 +336,10 @@ export default function SongDetail() {
         <div className="lg:col-span-5 flex flex-col justify-between space-y-5 sm:space-y-6">
 
           {isGenerating && !regeneratingMusic && (
-            <div className="bg-safran/10 border border-safran/30 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center shadow-sm relative overflow-hidden">
-              <MusicReadyAnimation show={false} />
-              <div className="animate-micPulse inline-block mb-3">
-                <Mic2 size={32} className="text-safran" />
-              </div>
-              <p className="font-bold text-sm sm:text-base">Composition de votre morceau en cours...</p>
-              <p className="text-xs text-muted mt-1">Le studio compose votre musique (environ 30 a 45 secondes).</p>
-              <div className="flex justify-center mt-3">
-                <span className="badge-music animate-pulse"><Headphones size={12} /> En composition</span>
-              </div>
+            <div className="bg-safran/10 border border-safran/30 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center shadow-sm">
+              <Loader2 size={32} className="text-safran animate-spin mx-auto mb-3" />
+              <p className="font-bold text-sm sm:text-base">Composition en cours...</p>
+              <p className="text-xs text-muted mt-1">Votre morceau sera pret dans 30 a 45 secondes.</p>
             </div>
           )}
 
@@ -396,7 +353,6 @@ export default function SongDetail() {
           {/* LECTEUR AUDIO */}
           {(song.status === "preview_ready" || isUnlocked) && !audioLoading && !regeneratingMusic && (
             <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden p-5 sm:p-8 shadow-xl border border-white/15 text-white bg-[#0C0F0E] animate-slideUp">
-              <MusicReadyAnimation show={musicJustReady} />
               <div
                 className="absolute inset-0 bg-cover bg-center blur-2xl scale-125 opacity-30 pointer-events-none"
                 style={{ backgroundImage: `url('${aiCoverImage}')` }}
@@ -436,13 +392,6 @@ export default function SongDetail() {
                       {song.recipient_name ? `${song.recipient_name} · ` : ""}
                       <span className="capitalize">{song.music_style}</span> ({song.dialect})
                     </p>
-
-                    {/* Pastille micro pour musique generee */}
-                    {isUnlocked && (
-                      <span className="inline-flex items-center gap-1 bg-emerald/20 text-emerald-light px-2 py-0.5 rounded-full text-[0.65rem] font-bold border border-emerald/30 animate-popIn">
-                        <Mic2 size={11} className="animate-micPulse" /> Musique generee
-                      </span>
-                    )}
 
                     <button
                       onClick={handleShare}
@@ -540,10 +489,7 @@ export default function SongDetail() {
           {song.lyrics ? (
             <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm flex flex-col h-full animate-slideUp" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
               <div className="flex items-center justify-between border-b border-line pb-3 sm:pb-4 mb-4 flex-shrink-0 flex-wrap gap-2">
-                <h2 className="font-display text-base sm:text-lg lg:text-xl font-bold flex items-center gap-2">
-                  <span className="badge-lyrics"><Music size={12} /> Paroles</span>
-                  Paroles de la chanson
-                </h2>
+                <h2 className="font-display text-base sm:text-lg lg:text-xl font-bold">Paroles</h2>
 
                 <div className="flex bg-cream p-1 rounded-xl border border-line text-xs font-bold">
                   <button

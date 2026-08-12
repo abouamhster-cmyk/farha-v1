@@ -164,31 +164,8 @@ const TRANSLATE_DEBOUNCE_MS = 1200;
 const STEP_ICONS = [FileText, Music, Headphones];
 const STEP_LABELS = ["L'idée", "Paroles", "Musique"];
 
-function FloatingNotes({ show }) {
-  if (!show) return null;
-  const notes = Array.from({ length: 6 }, (_, i) => ({
-    id: i,
-    left: 15 + Math.random() * 70,
-    delay: Math.random() * 0.6,
-    size: 12 + Math.random() * 8,
-  }));
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {notes.map((n) => (
-        <span
-          key={n.id}
-          className="note-particle text-safran"
-          style={{ left: `${n.left}%`, bottom: "20%", animationDelay: `${n.delay}s`, fontSize: `${n.size}px` }}
-        >
-          ♪
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export default function CreateSong() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [songId, setSongId] = useState(null);
@@ -200,8 +177,6 @@ export default function CreateSong() {
   const [online, setOnline] = useState(navigator.onLine);
   const [translating, setTranslating] = useState(false);
   const [templateAppliedNotice, setTemplateAppliedNotice] = useState("");
-  const [lyricsReady, setLyricsReady] = useState(false);
-
   const translateTimer = useRef(null);
   const translateAbort = useRef(null);
 
@@ -377,7 +352,6 @@ export default function CreateSong() {
 
   async function handleGenerateLyrics(id) {
     setError("");
-    setLyricsReady(false);
     const isRegen = !!(lyrics || lyricsFr);
     if (isRegen) setRegeneratingLyrics(true);
     else setLoading(true);
@@ -387,8 +361,6 @@ export default function CreateSong() {
       setLyrics(song.lyrics ?? "");
       setLyricsFr(song.lyrics_fr ?? "");
       setLyricsVersion(song.lyrics_version);
-      setLyricsReady(true);
-      setTimeout(() => setLyricsReady(false), 3000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -408,6 +380,7 @@ export default function CreateSong() {
     if (saveErr) { setLoading(false); setComposing(false); return setError(saveErr.message); }
     try {
       await callFunction("generate-music", { songId });
+      await refreshProfile();
       clearDraft();
       navigate(`/chanson/${songId}`);
     } catch (err) {
@@ -444,7 +417,7 @@ export default function CreateSong() {
           return (
             <div key={label} className="flex items-center gap-2 sm:gap-3 flex-1 justify-center">
               <span className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all duration-300 ${
-                done ? "bg-emerald text-white animate-popIn" : active ? "bg-safran text-ink shadow-sm font-bold animate-pulseGlow" : "bg-line text-muted"
+                done ? "bg-emerald text-white animate-popIn" : active ? "bg-safran text-ink shadow-sm font-bold" : "bg-line text-muted"
               }`}>
                 {done ? <Check size={16} /> : <StepIcon size={16} />}
               </span>
@@ -456,9 +429,12 @@ export default function CreateSong() {
       </div>
 
       {error && (
-        <div className="bg-henne/10 text-henne rounded-2xl px-4 py-3 sm:py-4 mb-6 text-xs sm:text-sm flex items-start gap-3 border border-henne/20 animate-slideDown">
-          <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
-          <div>{error}</div>
+        <div className="bg-henne/10 text-henne rounded-2xl px-4 py-3 sm:py-4 mb-6 text-xs sm:text-sm flex items-center justify-between gap-3 border border-henne/20 animate-slideDown">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
+            <div>{error}</div>
+          </div>
+          <button onClick={() => setError("")} className="text-henne/60 hover:text-henne font-bold flex-shrink-0 cursor-pointer">✕</button>
         </div>
       )}
 
@@ -468,9 +444,6 @@ export default function CreateSong() {
 
           <div className="flex items-start justify-between flex-wrap gap-4 border-b border-line pb-5">
             <div>
-              <div className="inline-flex items-center gap-1.5 bg-safran/10 text-safran border border-safran/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-                <Sparkles size={13} /> Studio de Création Musicale
-              </div>
               <h1 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold">
                 {hasExistingLyrics ? "Modifier votre projet" : "Quelle est votre idée ?"}
               </h1>
@@ -613,19 +586,12 @@ export default function CreateSong() {
 
       {/* STEP 2 : PAROLES */}
       {step === 2 && (
-        <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-sm space-y-5 sm:space-y-6 animate-slideUp relative">
-          <FloatingNotes show={lyricsReady} />
+        <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-sm space-y-5 sm:space-y-6 animate-slideUp">
 
           <div className="flex items-center justify-between border-b border-line pb-4 flex-wrap gap-2">
-            <div className="flex items-center gap-3">
-              {/* Pastille note de musique pour les paroles */}
-              <div className="badge-lyrics animate-popIn">
-                <Music size={12} /> Paroles
-              </div>
-              <div>
-                <h1 className="font-display text-xl sm:text-2xl font-bold">Vos paroles sur-mesure</h1>
-                <p className="text-muted text-xs sm:text-sm">Relisez et modifiez librement. C'est 100% gratuit.</p>
-              </div>
+            <div>
+              <h1 className="font-display text-xl sm:text-2xl font-bold">Vos paroles sur-mesure</h1>
+              <p className="text-muted text-xs sm:text-sm">Relisez et modifiez librement. C'est 100% gratuit.</p>
             </div>
             <button onClick={handleGoBackAndResubmit} className="text-xs font-semibold text-emerald hover:underline flex items-center gap-1 bg-cream px-3 py-2 rounded-xl border border-line cursor-pointer active:scale-[0.97]">
               <ChevronLeft size={14} /> Modifier l'idée
@@ -633,19 +599,12 @@ export default function CreateSong() {
           </div>
 
           {composing ? (
-            <div className="py-10 sm:py-12 relative">
-              <FloatingNotes show={true} />
+            <div className="py-10 sm:py-12">
               <ProgressCircle estimatedSeconds={35} active={composing} size={100} label="Le studio compose et chante votre morceau..." />
-              <div className="flex justify-center gap-2 mt-4">
-                <span className="badge-music animate-micPulse"><Mic2 size={12} /> Composition en cours</span>
-              </div>
             </div>
           ) : loading && !lyrics ? (
             <div className="py-10 sm:py-12">
               <ProgressCircle estimatedSeconds={12} active={loading} size={90} label="Rédaction des paroles en arabe authentique..." />
-              <div className="flex justify-center mt-4">
-                <span className="badge-lyrics animate-pulse"><Music size={12} /> Écriture des paroles</span>
-              </div>
             </div>
           ) : (
             <>
@@ -654,15 +613,7 @@ export default function CreateSong() {
                   <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 rounded-2xl flex flex-col items-center justify-center gap-3 min-h-[200px]">
                     <Loader2 size={28} className="text-emerald animate-spin" />
                     <p className="text-sm font-semibold text-ink">Régénération des paroles en cours...</p>
-                    <span className="badge-lyrics"><Music size={12} /> Nouvelles paroles</span>
                   </div>
-                </div>
-              )}
-
-              {lyricsReady && (
-                <div className="bg-emerald/10 text-emerald rounded-xl px-4 py-3 text-xs sm:text-sm flex items-center gap-2 border border-emerald/20 animate-popIn">
-                  <CheckCircle2 size={16} className="animate-bounceIn" />
-                  Paroles générées avec succès !
                 </div>
               )}
 
