@@ -3,62 +3,64 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { supabase } from "../lib/supabaseClient.js";
 import PaymentModal from "../components/PaymentModal.jsx";
 import {
-  CheckCircle2, Sparkles, Shield, ArrowRight, Music,
-  Zap, Clock, Crown, MessageCircle, Gift, Image as ImageIcon, Download, Loader2, Globe, Film
+  Sparkles, ArrowRight, Loader2, Check
 } from "lucide-react";
 
 const PLAN_CONTENT = {
   pack4: {
     name: "Découverte",
     popular: false,
-    description: "Pour tester vos premiers sons",
-    modelTag: "Modèle Audio Standard HD",
+    desc: "Pour tester vos premiers sons",
+    modelTag: "Lyria 3 Standard",
     features: [
-      { text: "4 compositions audio HD (MP3/WAV)", Icon: Music },
-      { text: "Pochette d'album dédiée", Icon: ImageIcon },
-      { text: "Paroles gratuites, modifiables & régénérables", Icon: CheckCircle2 },
-      { text: "Crédits sans expiration", Icon: Clock },
+      "4 musiques complètes HD (1:59 min)",
+      "Pochette d'album dédiée",
+      "Paroles gratuites & modifiables",
+      "Crédits sans expiration",
     ],
   },
   pack10: {
     name: "Créateur TikTok & Reels",
     popular: true,
-    description: "Le choix le plus populaire sur les réseaux",
-    modelTag: "Modèle Audio Haute-Fidélité (-20% de réduction)",
+    desc: "Le choix N°1 pour les réseaux",
+    modelTag: "Lyria 3 Haute-Fidélité",
+    discountBadge: "-20%",
     features: [
-      { text: "🔥 -20% de réduction (0,60 € / chanson)", Icon: Sparkles },
-      { text: "Tout le plan Découverte inclus", Icon: CheckCircle2 },
-      { text: "10 compositions audio HD", Icon: Music },
-      { text: "Génération musicale prioritaire", Icon: Zap },
-      { text: "Clips Vidéos 9:16 (Prochainement)", Icon: Film },
+      "🔥 -20% (0,60 € la chanson)",
+      "Tout le plan Découverte inclus",
+      "10 musiques HD (2:30 min)",
+      "Génération prioritaire rapide",
+      "Clips Vidéos 9:16 (Bientôt)",
     ],
   },
   pack20: {
     name: "Pro & Business",
     popular: false,
-    description: "Pour les marques, pubs et grands événements",
-    modelTag: "Modèle Studio Pro (Google Lyria 3 Pro)",
+    desc: "Pour les marques et publicités",
+    modelTag: "Google Lyria 3 Pro (3 min)",
+    discountBadge: "-33%",
     features: [
-      { text: "⚡ -33% de réduction (0,50 € / chanson)", Icon: Sparkles },
-      { text: "Tout le plan Créateur inclus", Icon: CheckCircle2 },
-      { text: "20 compositions audio HD", Icon: Music },
-      { text: "Auteur-parolier avancé (Gemini 3.5 Pro)", Icon: Sparkles },
-      { text: "Droits d'usage commercial & pubs inclus", Icon: Shield },
-      { text: "Support prioritaire dédié sous 12h", Icon: MessageCircle },
+      "⚡ -33% (0,50 € la chanson)",
+      "Tout le plan Créateur inclus",
+      "20 musiques Master (3 min)",
+      "Auteur-parolier avancé (Gemini)",
+      "Droits d'usage commercial & pubs",
+      "Support prioritaire sous 12h",
     ],
   },
   pack40: {
     name: "Studio VIP",
     popular: false,
-    description: "Pour les créateurs fréquents et agences",
-    modelTag: "Modèle Master Studio Ultra-HD (-35% de réduction)",
+    desc: "Pour agences et créateurs fréquents",
+    modelTag: "Master Studio Ultra-HD",
+    discountBadge: "-35%",
     features: [
-      { text: "👑 -35% de réduction (0,49 € / chanson)", Icon: Crown },
-      { text: "Tout le plan Pro & Business inclus", Icon: CheckCircle2 },
-      { text: "40 compositions audio HD", Icon: Music },
-      { text: "Génération instantanée zéro attente", Icon: Zap },
-      { text: "Support privé WhatsApp 7j/7", Icon: MessageCircle },
-      { text: "Badge Créateur VIP sur le profil", Icon: Crown },
+      "👑 -35% (0,49 € la chanson)",
+      "Tout le plan Pro inclus",
+      "40 musiques Master (3 min)",
+      "Composition instantanée zéro attente",
+      "Support privé WhatsApp 7j/7",
+      "Badge Créateur VIP",
     ],
   },
 };
@@ -97,133 +99,112 @@ export default function PricingPage() {
   }, []);
 
   return (
-    <div className="px-5 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-7xl mx-auto">
+    <div className="px-4 sm:px-8 lg:px-10 py-6 lg:py-8 max-w-7xl mx-auto">
 
-      {/* Header Page Tarifs */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 text-safran text-xs font-bold uppercase tracking-widest mb-2">
-          <Sparkles size={14} /> Formules du Studio
+      {/* Header Page Tarifs Compact */}
+      <div className="mb-6 text-center sm:text-left">
+        <div className="inline-flex items-center gap-1.5 text-safran text-xs font-bold uppercase tracking-widest bg-safran/10 px-3 py-1 rounded-full border border-safran/20 mb-2">
+          <Sparkles size={13} /> Formules du Studio
         </div>
-        <h1 className="font-display text-2xl sm:text-4xl font-bold mb-2">Choisissez votre formule</h1>
-        <p className="text-muted text-sm sm:text-base max-w-[640px]">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold mb-1">Choisissez votre formule</h1>
+        <p className="text-muted text-xs sm:text-sm max-w-[620px]">
           Chaque crédit débloque 1 musique complète en HD avec sa pochette d'album dédicacée.
         </p>
         {credits > 0 && (
-          <div className="mt-4 inline-flex items-center gap-2 bg-emerald/10 text-emerald px-4 py-2 rounded-xl text-sm font-semibold">
-            <Sparkles size={14} /> {credits} crédit{credits > 1 ? "s" : ""} disponible{credits > 1 ? "s" : ""}
+          <div className="mt-3 inline-flex items-center gap-2 bg-emerald/10 text-emerald px-3.5 py-1.5 rounded-xl text-xs font-bold border border-emerald/20">
+            <Sparkles size={13} /> {credits} crédit{credits > 1 ? "s" : ""} disponible{credits > 1 ? "s" : ""} dans votre solde
           </div>
         )}
       </div>
 
-      {/* Promo Cadeau Première Musique */}
-      <div className="bg-white border border-safran/30 rounded-3xl p-6 mb-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-safran/15 flex items-center justify-center flex-shrink-0">
-          <Gift size={24} className="text-safran" />
-        </div>
-        <div>
-          <h3 className="font-display font-bold text-lg mb-0.5">Paroles et extrait audio toujours gratuits</h3>
-          <p className="text-xs sm:text-sm text-muted">Créez et écoutez gratuitement vos paroles et votre extrait audio (15s à 30s) sans engagement.</p>
-        </div>
-      </div>
-
-      {/* Cartes de Tarifs Alignées */}
+      {/* Cartes de Tarifs Modernes, Compactes & Aérées */}
       {!plans ? (
         <div className="flex justify-center py-16"><Loader2 size={28} className="text-safran animate-spin" /></div>
       ) : (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 items-stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-stretch mb-8">
         {plans.map((plan) => (
           <div
             key={plan.id}
-            className={`relative rounded-3xl flex flex-col justify-between overflow-hidden transition-all hover:shadow-lg ${
+            className={`relative rounded-2xl flex flex-col justify-between overflow-hidden transition-all duration-200 hover:-translate-y-1 ${
               plan.popular
-                ? "bg-[#0C0F0E] text-white border-2 border-safran shadow-xl"
-                : "bg-white border border-line"
+                ? "bg-[#0C0F0E] text-white border-2 border-safran shadow-xl ring-1 ring-safran/20"
+                : "bg-white border border-line/80 hover:border-safran/50 shadow-xs hover:shadow-md"
             }`}
           >
+            {/* Badge Recommandé */}
             {plan.popular && (
-              <div className="bg-safran text-ink text-[0.68rem] font-bold uppercase tracking-wider text-center py-1.5">
-                ★ Le plus populaire
+              <div className="bg-safran text-ink text-[0.65rem] font-extrabold uppercase tracking-wider text-center py-1.5 shadow-xs">
+                ★ LE PLUS POPULAIRE
               </div>
             )}
 
-            <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between">
+            <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
               <div>
-                <div className={`text-xs font-bold uppercase tracking-widest mb-1.5 ${plan.popular ? "text-safran" : "text-emerald"}`}>
-                  {plan.name}
+                {/* Nom du plan + Badge réduction */}
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className={`text-xs font-extrabold uppercase tracking-wider ${plan.popular ? "text-safran" : "text-emerald"}`}>
+                    {plan.name}
+                  </span>
+                  {plan.discountBadge && (
+                    <span className={`text-[0.62rem] font-extrabold px-2 py-0.5 rounded-full ${
+                      plan.popular ? "bg-henne text-white" : "bg-safran/15 text-safran border border-safran/30"
+                    }`}>
+                      {plan.discountBadge}
+                    </span>
+                  )}
                 </div>
-                <p className={`text-xs mb-3 ${plan.popular ? "text-white/60" : "text-muted"}`}>
-                  {plan.description}
+
+                <p className={`text-[0.72rem] mb-2.5 leading-snug ${plan.popular ? "text-white/60" : "text-muted"}`}>
+                  {plan.desc}
                 </p>
 
-                {/* BADGE DE MODÈLE DE NIVEAU */}
-                {plan.modelTag && (
-                  <div className="mb-4">
-                    <span className={`inline-block text-[0.68rem] font-bold px-2.5 py-1 rounded-md border ${
-                      plan.popular ? "bg-safran/15 text-safran border-safran/30" : "bg-emerald/10 text-emerald border-emerald/20"
-                    }`}>
-                      ⚡ {plan.modelTag}
-                    </span>
-                  </div>
-                )}
+                {/* Badge du Modèle */}
+                <div className="mb-3">
+                  <span className={`inline-flex items-center gap-1 text-[0.65rem] font-bold px-2.5 py-0.5 rounded-md border ${
+                    plan.popular ? "bg-white/10 text-safran-bright border-white/15" : "bg-cream text-emerald border-line"
+                  }`}>
+                    ⚡ {plan.modelTag}
+                  </span>
+                </div>
 
-                <div className="mb-1">
-                  <span className={`font-display text-4xl font-bold ${plan.popular ? "text-white" : "text-ink"}`}>
+                {/* Prix */}
+                <div className="mb-0.5 flex items-baseline gap-1">
+                  <span className={`font-display text-3xl font-extrabold leading-none ${plan.popular ? "text-white" : "text-ink"}`}>
                     {plan.price}
                   </span>
                 </div>
-                <div className={`text-xs mb-6 ${plan.popular ? "text-white/50" : "text-muted"}`}>
-                  {plan.songs} musiques · {plan.perSong} / son
+
+                <div className={`text-[0.72rem] font-medium mb-4 ${plan.popular ? "text-white/40" : "text-muted"}`}>
+                  {plan.songs} musiques · <span className="font-bold">{plan.perSong}</span> / son
                 </div>
 
-                <ul className="space-y-3 mb-8">
+                {/* Puces d'avantages compactes */}
+                <ul className="space-y-2 mb-5">
                   {plan.features.map((f) => (
-                    <li key={f.text} className={`flex items-start gap-2.5 text-xs sm:text-sm ${plan.popular ? "text-white/85" : "text-muted"}`}>
-                      <f.Icon size={16} className={`flex-shrink-0 mt-0.5 ${plan.popular ? "text-safran" : "text-emerald"}`} />
-                      {f.text}
+                    <li key={f} className={`flex items-start gap-2 text-[0.75rem] leading-snug ${plan.popular ? "text-white/85" : "text-muted"}`}>
+                      <Check size={14} className={`flex-shrink-0 mt-0.5 ${plan.popular ? "text-safran font-bold" : "text-emerald font-bold"}`} />
+                      <span>{f}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
+              {/* Bouton d'action */}
               <button
                 onClick={() => setSelectedPack(plan)}
-                className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 mt-auto cursor-pointer ${
+                className={`w-full py-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 mt-auto cursor-pointer shadow-xs ${
                   plan.popular
                     ? "bg-safran hover:bg-safran-bright text-ink"
                     : "bg-emerald hover:bg-emerald-light text-white"
                 }`}
               >
-                Choisir ce plan <ArrowRight size={16} />
+                Choisir ce plan <ArrowRight size={14} />
               </button>
             </div>
           </div>
         ))}
       </div>
       )}
-
-      {/* Avantages Inclus dans tous les plans */}
-      <div className="bg-white border border-line rounded-3xl p-6 sm:p-10 mb-10 shadow-sm">
-        <h3 className="font-display text-xl font-bold mb-6 text-center">Inclus dans toutes vos créations</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[
-            { Icon: ImageIcon, title: "Pochette d'album dédicacée", desc: "Illustration artistique unique créée selon le thème et l'histoire de votre chanson." },
-            { Icon: Globe, title: "Tous les dialectes arabes", desc: "Marocain, Algérien, Tunisien, Libyen, Mauritanien, Égyptien, Levantin, Khaleeji ou Fusha." },
-            { Icon: Download, title: "Téléchargement HD instantané", desc: "Fichier audio haute définition téléchargeable immédiatement dès le déblocage." },
-            { Icon: CheckCircle2, title: "Paroles & Retouches Gratuites", desc: "Rédigez et modifiez votre texte autant de fois que nécessaire sans payer." },
-            { Icon: Shield, title: "Sans Engagement & Sans Abonnement", desc: "Achetez uniquement ce dont vous avez besoin. Vos crédits n'expirent jamais." },
-          ].map((item) => (
-            <div key={item.title} className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-2xl bg-cream flex items-center justify-center flex-shrink-0 text-emerald">
-                <item.Icon size={20} />
-              </div>
-              <div>
-                <h4 className="font-bold text-sm mb-1">{item.title}</h4>
-                <p className="text-xs text-muted leading-relaxed">{item.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* Modal Paiement */}
       {selectedPack && (

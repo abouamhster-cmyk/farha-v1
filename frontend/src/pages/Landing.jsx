@@ -632,6 +632,7 @@ function Reviews() {
   );
 }
 
+ // --- CARTES TARIFS DYNAMIQUES AÉRÉES ET COMPACTES ---
 function Pricing() {
   const [plans, setPlans] = useState(null);
 
@@ -658,50 +659,58 @@ function Pricing() {
   }, []);
 
   return (
-    <section id="tarifs" className="py-16 sm:py-24 bg-white border-t border-line">
+    <section id="tarifs" className="py-12 sm:py-16 bg-white border-t border-line">
       <div className="max-w-[1280px] mx-auto px-6 sm:px-8 lg:px-10">
-        <div className="text-center mb-10 sm:mb-14">
-          <div className="text-henne text-xs sm:text-sm font-bold uppercase tracking-widest mb-2 sm:mb-3">Tarifs</div>
-          <h2 className="font-display font-bold text-2xl sm:text-3xl lg:text-4xl">Simple, transparent</h2>
-          <p className="text-muted text-xs sm:text-base mt-2">Première création offerte. Rédaction des paroles gratuite. Vous ne débloquez que le projet final qui vous plaît.</p>
+        <div className="text-center mb-8 sm:mb-10">
+          <div className="text-henne text-xs sm:text-sm font-bold uppercase tracking-widest mb-2">Tarifs</div>
+          <h2 className="font-display font-bold text-2xl sm:text-3xl lg:text-4xl">Simple, transparent, sans abonnement</h2>
+          <p className="text-muted text-xs sm:text-base mt-1.5">Première création offerte. Rédaction des paroles gratuite. Vous ne débloquez que le projet final qui vous plaît.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6 items-stretch">
+        {/* Grille compacte */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-stretch">
           {(plans ?? []).map((plan) => (
-            <div key={plan.id} className={`relative rounded-3xl flex flex-col justify-between overflow-hidden transition-all hover:shadow-lg ${plan.popular ? "bg-[#0C0F0E] text-white border-2 border-safran shadow-xl" : "bg-white border border-line"}`}>
+            <div key={plan.id} className={`relative rounded-2xl flex flex-col justify-between overflow-hidden transition-all duration-200 hover:-translate-y-1 ${plan.popular ? "bg-[#0C0F0E] text-white border-2 border-safran shadow-xl ring-1 ring-safran/20" : "bg-white border border-line/80 hover:border-safran/50 shadow-xs hover:shadow-md"}`}>
               {plan.popular && (
-                <div className="bg-safran text-ink text-[0.68rem] font-bold uppercase tracking-wider text-center py-2">Le plus choisi</div>
+                <div className="bg-safran text-ink text-[0.65rem] font-extrabold uppercase tracking-wider text-center py-1.5">Le plus choisi</div>
               )}
-              <div className="p-6 sm:p-7 lg:p-8 flex-1 flex flex-col justify-between">
+              <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
                 <div>
-                  <div className={`text-xs font-bold uppercase tracking-widest mb-1.5 ${plan.popular ? "text-safran" : "text-emerald"}`}>{plan.name}</div>
-                  <p className={`text-[0.78rem] mb-3 ${plan.popular ? "text-white/50" : "text-muted"}`}>{plan.desc}</p>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className={`text-xs font-extrabold uppercase tracking-wider ${plan.popular ? "text-safran" : "text-emerald"}`}>{plan.name}</span>
+                    {plan.discountBadge && (
+                      <span className={`text-[0.62rem] font-extrabold px-2 py-0.5 rounded-full ${plan.popular ? "bg-henne text-white" : "bg-safran/15 text-safran border border-safran/30"}`}>
+                        {plan.discountBadge}
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-[0.72rem] mb-2.5 leading-snug ${plan.popular ? "text-white/60" : "text-muted"}`}>{plan.desc}</p>
                   
                   {plan.modelTag && (
-                    <div className="mb-4">
-                      <span className={`inline-block text-[0.7rem] font-bold px-3 py-1 rounded-lg border ${
-                        plan.popular ? "bg-safran/15 text-safran border-safran/30" : "bg-emerald/10 text-emerald border-emerald/20"
+                    <div className="mb-3">
+                      <span className={`inline-block text-[0.65rem] font-bold px-2.5 py-0.5 rounded-md border ${
+                        plan.popular ? "bg-white/10 text-safran-bright border-white/15" : "bg-cream text-emerald border-line"
                       }`}>
                         ⚡ {plan.modelTag}
                       </span>
                     </div>
                   )}
 
-                  <div className="mb-1">
-                    <span className={`font-display text-3xl sm:text-4xl font-bold leading-none ${plan.popular ? "text-white" : "text-ink"}`}>{plan.price}</span>
+                  <div className="mb-0.5 flex items-baseline gap-1">
+                    <span className={`font-display text-3xl font-extrabold leading-none ${plan.popular ? "text-white" : "text-ink"}`}>{plan.price}</span>
                   </div>
-                  <div className={`text-xs mb-6 ${plan.popular ? "text-white/40" : "text-muted"}`}>{plan.songs} musiques · {plan.perSong} / son</div>
+                  <div className={`text-xs mb-4 ${plan.popular ? "text-white/40" : "text-muted"}`}>{plan.songs} musiques · <span className="font-bold">{plan.perSong}</span> / son</div>
                   
-                  <ul className="space-y-3 mb-8">
+                  <ul className="space-y-2 mb-5">
                     {(plan.features || []).map((f) => (
-                      <li key={f} className={`flex items-start gap-2.5 text-xs sm:text-[0.8rem] ${plan.popular ? "text-white/80" : "text-muted"}`}>
+                      <li key={f} className={`flex items-start gap-2 text-xs sm:text-[0.78rem] ${plan.popular ? "text-white/80" : "text-muted"}`}>
                         <span className={`mt-0.5 font-bold ${plan.popular ? "text-safran" : "text-emerald"}`}>✓</span> {f}
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <Link to="/inscription" className={`block text-center rounded-xl py-3.5 font-bold text-sm transition-colors mt-auto ${plan.popular ? "bg-safran hover:bg-safran-bright text-ink" : "bg-emerald hover:bg-emerald-light text-white"}`}>
+                <Link to="/inscription" className={`block text-center rounded-xl py-3 font-bold text-xs sm:text-sm transition-colors mt-auto ${plan.popular ? "bg-safran hover:bg-safran-bright text-ink" : "bg-emerald hover:bg-emerald-light text-white"}`}>
                   Choisir ce plan
                 </Link>
               </div>
@@ -712,6 +721,8 @@ function Pricing() {
     </section>
   );
 }
+
+
 
 function FAQ() {
   const [open, setOpen] = useState(null);
