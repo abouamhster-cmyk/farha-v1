@@ -26,33 +26,33 @@ export default function PaymentModal({ pack, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      {/* CARTE MODAL RESPONSIVE COMPACTE (MAX 90VH + SCROLL INTERNE) */}
-      <div className="relative w-full max-w-[440px] bg-white rounded-3xl p-5 sm:p-7 border border-line shadow-2xl my-auto max-h-[90vh] overflow-y-auto space-y-4 sm:space-y-5">
+      {/* CARTE MODAL : BARRE DE SCROLL MASQUÉE & HAUTEUR ULTRA-COMPACTE DE HIGH-PRECISION */}
+      <div className="relative w-full max-w-[430px] bg-white rounded-3xl p-5 sm:p-6 border border-line shadow-2xl my-auto max-h-[92vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden space-y-3.5 sm:space-y-4">
         
         {/* Bouton Fermer */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-cream hover:bg-line text-muted flex items-center justify-center transition-colors cursor-pointer"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-cream hover:bg-line text-muted hover:text-ink flex items-center justify-center transition-colors cursor-pointer z-10"
         >
           <X size={16} />
         </button>
 
         {/* En-tête */}
         <div className="pr-6">
-          <div className="inline-flex items-center gap-1 text-safran text-[0.7rem] font-bold uppercase tracking-widest bg-safran/10 px-2.5 py-0.5 rounded-full border border-safran/20 mb-1.5">
+          <div className="inline-flex items-center gap-1 text-safran text-[0.68rem] font-bold uppercase tracking-widest bg-safran/10 px-2.5 py-0.5 rounded-full border border-safran/20 mb-1">
             <Sparkles size={11} /> Confirmation Studio
           </div>
           <h2 className="font-display text-xl sm:text-2xl font-bold leading-tight">Régler votre formule</h2>
-          <p className="text-muted text-xs mt-1">
+          <p className="text-muted text-xs mt-0.5">
             Sélectionnez votre moyen de paiement sécurisé.
           </p>
         </div>
 
         {/* Récapitulatif du Pack */}
-        <div className="bg-cream rounded-2xl p-3.5 border border-line flex items-center justify-between">
+        <div className="bg-cream rounded-2xl p-3 sm:p-3.5 border border-line flex items-center justify-between">
           <div>
             <div className="font-bold text-xs sm:text-sm text-ink">{pack.label}</div>
-            <div className="text-[0.7rem] text-muted">{pack.songs} crédits musiques HD</div>
+            <div className="text-[0.68rem] text-muted">{pack.songs} crédits musiques HD</div>
           </div>
           <div className="text-right">
             <div className="font-display text-lg sm:text-xl font-bold text-emerald">{pack.price}</div>
@@ -61,8 +61,8 @@ export default function PaymentModal({ pack, onClose }) {
         </div>
 
         {/* Choix des Moyens de Paiement */}
-        <div className="space-y-2">
-          <label className="block text-[0.7rem] font-bold uppercase tracking-wider text-muted">
+        <div className="space-y-1.5">
+          <label className="block text-[0.68rem] font-bold uppercase tracking-wider text-muted">
             Moyen de paiement
           </label>
 
@@ -71,7 +71,7 @@ export default function PaymentModal({ pack, onClose }) {
             <button
               type="button"
               onClick={() => setProvider("stripe")}
-              className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+              className={`p-2.5 sm:p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                 provider === "stripe"
                   ? "border-safran bg-safran/10 text-ink font-bold shadow-xs ring-2 ring-safran/30"
                   : "border-line bg-white hover:border-emerald/40 text-muted"
@@ -91,7 +91,7 @@ export default function PaymentModal({ pack, onClose }) {
             <button
               type="button"
               onClick={() => setProvider("paypal")}
-              className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+              className={`p-2.5 sm:p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                 provider === "paypal"
                   ? "border-safran bg-safran/10 text-ink font-bold shadow-xs ring-2 ring-safran/30"
                   : "border-line bg-white hover:border-emerald/40 text-muted"
@@ -111,7 +111,7 @@ export default function PaymentModal({ pack, onClose }) {
             <button
               type="button"
               onClick={() => setProvider("fedapay")}
-              className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+              className={`p-2.5 sm:p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                 provider === "fedapay"
                   ? "border-safran bg-safran/10 text-ink font-bold shadow-xs ring-2 ring-safran/30"
                   : "border-line bg-white hover:border-emerald/40 text-muted"
@@ -139,7 +139,7 @@ export default function PaymentModal({ pack, onClose }) {
         <button
           onClick={handleCheckout}
           disabled={loading}
-          className="w-full py-3.5 rounded-2xl bg-emerald hover:bg-emerald-light text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+          className="w-full py-3 sm:py-3.5 rounded-2xl bg-emerald hover:bg-emerald-light text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
         >
           {loading ? (
             <><Loader2 size={16} className="animate-spin" /> Redirection vers le paiement…</>
@@ -148,7 +148,7 @@ export default function PaymentModal({ pack, onClose }) {
           )}
         </button>
 
-        <div className="flex items-center justify-center gap-1.5 text-[0.68rem] text-muted font-medium pt-0.5">
+        <div className="flex items-center justify-center gap-1.5 text-[0.65rem] text-muted font-medium pt-0.5">
           <ShieldCheck size={13} className="text-emerald" /> Paiement chiffré SSL 256-bit — Crédits ajoutés immédiatement
         </div>
       </div>
