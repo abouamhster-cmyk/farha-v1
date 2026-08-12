@@ -1,110 +1,68 @@
-// POST /fedapay-webhook
-// Appelé par Fedapay quand une transaction est approuvée.
-// Retrouve la commande PENDING par la référence/description et crédite l'utilisateur.
 import { jsonResponse } from "../_shared/cors.ts";
 import { getSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
-Deno.serve(async (req) => {
-  try {
-    const rawBody = await req.text();
-    console.log("Fedapay webhook received:", rawBody.slice(0, 500));
+Deno.serve(async (req: Request) => {
+  // 1. Lire le corps de la requête envoyé par Fedapay
+  const body = await req.json();
+  const admin = getSupabaseAdmin();
 
-    const event = JSON.parse(rawBody);
+  // Fedapay envoie un objet transaction dans le corps
+  // On récupère la transaction et ses métadonnées
+  const transaction = body.transaction;
+  
+  if (!transaction || !transaction.id) {
+    return jsonResponse({ error: "Données de transaction manquantes" }, 400);
+  }
 
-    // Fedapay envoie différents formats selon la version
-    const eventName = event.name ?? event.event ?? event.type ?? "";
-    console.log("Event name:", eventName);
+  // 2. Extraire l'ID de notre commande interne
+  // Rappel : dans create-checkout, on a mis "Commande [orderId]" dans la description
+  const description = transaction.description || "";
+  const orderId = description.replace("Commande ", "").trim();
 
-    if (!eventName.includes("approved")) {
-      console.log("Event ignoré (pas approved):", eventName);
-      return jsonResponse({ received: true, ignored: true });
+  // 3. Vérifier si la transaction est validée
+  if (transaction.status === "approved" || transaction.status === "completed") {
+    
+    // Récupérer la commande pour vérifier si elle n'a pas déjà été traitée
+    const { data: order, error: orderErr } = await admin
+      .from("orders")
+      .select("*")
+      .eq("id", orderId)
+      .single();
+
+    if (orderErr || !order || order.status === "completed") {
+      return jsonResponse({ message: "Commande déjà traitée ou introuvable" }, 200);
     }
 
-    const tx = event.entity ?? event.data ?? event.object ?? {};
-    const txId = String(tx.id ?? "");
-    const txRef = tx.reference ?? "";
-    const description = tx.description ?? "";
+    // 4. TRANSACTION RÉUSSIE : Créditer l'utilisateur
+    // On met à jour la commande
+    await admin
+      .from("orders")
+      .update({ status: "completed" })
+      .eq("id", orderId);
 
-    console.log("Transaction:", { id: txId, ref: txRef, description, status: tx.status });
-
-    const admin = getSupabaseAdmin();
-
-    // Stratégie 1 : retrouver l'orderId encodé dans la description (format "Farha|<orderId>")
-    let orderId: string | null = null;
-    if (description.includes("|")) {
-      orderId = description.split("|")[1]?.trim();
-    }
-
-    let order: any = null;
-
-    if (orderId) {
-      // Chercher par orderId direct
-      const { data } = await admin.from("orders")
-        .select("*")
-        .eq("id", orderId)
-        .eq("status", "pending")
-        .single();
-      order = data;
-    }
-
-    if (!order) {
-      // Stratégie 2 : chercher par provider_session_id (reference Fedapay)
-      const { data } = await admin.from("orders")
-        .select("*")
-        .eq("provider", "fedapay")
-        .eq("provider_session_id", txRef)
-        .eq("status", "pending")
-        .single();
-      order = data;
-    }
-
-    if (!order) {
-      // Stratégie 3 : chercher par provider_session_id = txId
-      const { data } = await admin.from("orders")
-        .select("*")
-        .eq("provider", "fedapay")
-        .eq("provider_session_id", txId)
-        .eq("status", "pending")
-        .single();
-      order = data;
-    }
-
-    if (!order) {
-      console.error("Aucune commande pending trouvée pour tx:", { txId, txRef, orderId });
-      return jsonResponse({ received: true, error: "Order not found" });
-    }
-
-    console.log("Order trouvée:", order.id, "user:", order.user_id);
-
-    // Idempotence : vérifier que la commande est toujours pending
-    if (order.status !== "pending") {
-      console.log("Commande déjà traitée:", order.id);
-      return jsonResponse({ received: true, duplicate: true });
-    }
-
-    // Marquer la commande comme payée
-    const { error: updateErr } = await admin.from("orders").update({
-      status: "paid",
-      provider_event_id: `fedapay_${txId}_${eventName}`,
-      paid_at: new Date().toISOString(),
-    }).eq("id", order.id).eq("status", "pending"); // double-check status pour idempotence
-
-    if (updateErr) {
-      console.error("Erreur update order:", updateErr);
-      return jsonResponse({ received: true, error: updateErr.message });
-    }
-
-    // Créditer l'utilisateur
-    await admin.rpc("increment_profile_credits", {
+    // On ajoute les crédits au profil de l'utilisateur via un RPC (ou update direct)
+    // Ici, nous utilisons une requête SQL pour incrémenter les crédits
+    const { error: creditErr } = await admin.rpc("add_profile_credits", {
       p_user_id: order.user_id,
       p_amount: order.songs_granted,
     });
 
-    console.log(`SUCCÈS: User ${order.user_id} crédité de ${order.songs_granted} chanson(s)`);
+    if (creditErr) {
+      console.error("Erreur ajout crédits:", creditErr);
+      return jsonResponse({ error: "Erreur lors de l'ajout des crédits" }, 500);
+    }
 
-    return jsonResponse({ received: true, credited: true });
-  } catch (err) {
-    console.error("Webhook error:", err);
-    return jsonResponse({ error: (err as Error).message }, 500);
+    console.log(`Paiement validé pour Order ${orderId}, crédits ajoutés à ${order.user_id}`);
+    return jsonResponse({ status: "success" }, 200);
+
+  } else if (transaction.status === "declined" || transaction.status === "canceled") {
+    await admin
+      .from("orders")
+      .update({ status: "failed" })
+      .eq("id", orderId);
+      
+    return jsonResponse({ status: "transaction_refused" }, 200);
   }
+
+  return jsonResponse({ status: "ignored" }, 200);
 });

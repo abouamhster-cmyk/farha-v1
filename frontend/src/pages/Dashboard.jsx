@@ -46,7 +46,21 @@ export default function Dashboard() {
   }
 
   useEffect(() => { loadSongs(); }, [user?.id]);
-  useEffect(() => { if (searchParams.get("checkout") === "success") refreshProfile(); }, [searchParams]);
+
+  // VÉRIFICATION EN DEUX TEMPS DU RETOUR DE PAIEMENT (INSTANTANÉE + DELAYED)
+  useEffect(() => {
+    if (searchParams.get("checkout") === "success") {
+      refreshProfile(); // 1er rafraîchissement immédiat
+      
+      // 2ème rafraîchissement 1.8s plus tard pour laisser le temps au Webhook de créditer
+      const timer = setTimeout(() => {
+        refreshProfile();
+        loadSongs();
+      }, 1800);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   const credits = profile?.credits ?? 0;
   const firstName = profile?.full_name?.split(" ")[0] ?? "";
@@ -56,6 +70,16 @@ export default function Dashboard() {
 
   return (
     <div className="px-5 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-7xl mx-auto">
+
+      {/* Message de succès d'achat si retour de paiement */}
+      {searchParams.get("checkout") === "success" && (
+        <div className="bg-emerald/10 text-emerald rounded-2xl p-4 sm:p-5 mb-6 text-sm border border-emerald/20 flex items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-2.5 font-bold">
+            <CheckCircle2 size={20} className="text-emerald flex-shrink-0" />
+            <span>Paiement réussi ! Vos nouveaux crédits ont été ajoutés à votre solde.</span>
+          </div>
+        </div>
+      )}
 
       {/* Header Accueil */}
       <div className="bg-white border border-line rounded-3xl p-6 sm:p-8 mb-8 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6">
