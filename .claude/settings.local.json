@@ -3,7 +3,10 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:ai.google.dev)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(ls \"C:\\\\Users\\\\jbill\\\\OneDrive\\\\Bureau\\\\farha v1\\\\\")",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget"
     ]
   }
 }

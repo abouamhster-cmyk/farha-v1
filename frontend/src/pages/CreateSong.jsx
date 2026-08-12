@@ -6,23 +6,18 @@ import { saveDraft, loadDraft, clearDraft } from "../lib/songCache.js";
 import ProgressCircle from "../components/ProgressCircle.jsx";
 import {
   ArrowRight, Loader2, RefreshCw, Check, Music, User,
-  Globe, ChevronLeft, AlertTriangle, Save, Wifi, WifiOff, Sparkles, Video, Store, Laugh, PartyPopper, Lightbulb, Mic, Users, Baby, CheckCircle2, ChevronDown
+  Globe, ChevronLeft, AlertTriangle, Save, Wifi, WifiOff, Sparkles, Video, Store, Laugh, PartyPopper, Lightbulb, Mic, Mic2, Users, Baby, CheckCircle2, ChevronDown, FileText, Headphones
 } from "lucide-react";
 
 const DIALECTS = [
-  // Maghreb
   { value: "marocain", label: "Darija marocaine (المغربية)" },
   { value: "algerien", label: "Darija algérienne (الجزائرية)" },
   { value: "tunisien", label: "Darija tunisienne (التونسية)" },
   { value: "libyen", label: "Lahja libyenne (الليبية)" },
   { value: "mauritaniene", label: "Hassanya mauritanienne (الحسانية)" },
-  
-  // Égypte & Moyen-Orient
   { value: "egyptien", label: "Égyptien (المصرية - Masri)" },
   { value: "levantin", label: "Levantin / Shami (الشامية)" },
   { value: "khaleeji", label: "Golfe / Khaleeji (الخليجية)" },
-
-  // Arabe Littéraire
   { value: "fusha", label: "Arabe Poétique / Fusha (الفصحى)" },
 ];
 
@@ -53,7 +48,6 @@ const CATEGORIES = [
   { id: "Mariage / Fête", label: "Mariage & Fêtes", Icon: PartyPopper, desc: "Célébrations" },
 ];
 
-// MODÈLES DE PROMPTS PURGÉS DES ÉMOJIS
 const EXPLICIT_PROMPT_TEMPLATES = [
   {
     label: "Vlog Voyage Marrakech",
@@ -167,6 +161,32 @@ const EXPLICIT_PROMPT_TEMPLATES = [
 
 const TRANSLATE_DEBOUNCE_MS = 1200;
 
+const STEP_ICONS = [FileText, Music, Headphones];
+const STEP_LABELS = ["L'idée", "Paroles", "Musique"];
+
+function FloatingNotes({ show }) {
+  if (!show) return null;
+  const notes = Array.from({ length: 6 }, (_, i) => ({
+    id: i,
+    left: 15 + Math.random() * 70,
+    delay: Math.random() * 0.6,
+    size: 12 + Math.random() * 8,
+  }));
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {notes.map((n) => (
+        <span
+          key={n.id}
+          className="note-particle text-safran"
+          style={{ left: `${n.left}%`, bottom: "20%", animationDelay: `${n.delay}s`, fontSize: `${n.size}px` }}
+        >
+          ♪
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function CreateSong() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -180,6 +200,7 @@ export default function CreateSong() {
   const [online, setOnline] = useState(navigator.onLine);
   const [translating, setTranslating] = useState(false);
   const [templateAppliedNotice, setTemplateAppliedNotice] = useState("");
+  const [lyricsReady, setLyricsReady] = useState(false);
 
   const translateTimer = useRef(null);
   const translateAbort = useRef(null);
@@ -356,6 +377,7 @@ export default function CreateSong() {
 
   async function handleGenerateLyrics(id) {
     setError("");
+    setLyricsReady(false);
     const isRegen = !!(lyrics || lyricsFr);
     if (isRegen) setRegeneratingLyrics(true);
     else setLoading(true);
@@ -365,6 +387,8 @@ export default function CreateSong() {
       setLyrics(song.lyrics ?? "");
       setLyricsFr(song.lyrics_fr ?? "");
       setLyricsVersion(song.lyrics_version);
+      setLyricsReady(true);
+      setTimeout(() => setLyricsReady(false), 3000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -397,37 +421,42 @@ export default function CreateSong() {
   const hasExistingLyrics = !!(lyrics || lyricsFr);
 
   return (
-    <div className="px-5 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-5xl mx-auto">
+    <div className="px-4 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-5xl mx-auto">
 
       {!online && (
-        <div className="bg-henne/10 text-henne rounded-2xl px-5 py-3 mb-5 text-xs sm:text-sm flex items-center gap-2 border border-henne/20">
+        <div className="bg-henne/10 text-henne rounded-2xl px-4 py-3 mb-5 text-xs sm:text-sm flex items-center gap-2 border border-henne/20 animate-slideDown">
           <WifiOff size={16} /> Connexion perdue. Données sauvegardées localement.
         </div>
       )}
 
       {draftRestored && (
-        <div className="bg-emerald/10 text-emerald rounded-2xl px-5 py-3 mb-5 text-xs sm:text-sm flex items-center gap-2 border border-emerald/20">
+        <div className="bg-emerald/10 text-emerald rounded-2xl px-4 py-3 mb-5 text-xs sm:text-sm flex items-center gap-2 border border-emerald/20 animate-slideDown">
           <Save size={16} /> Brouillon restauré automatiquement.
         </div>
       )}
 
-      {/* Stepper Propre */}
-      <div className="bg-white border border-line rounded-3xl p-5 mb-8 shadow-sm flex items-center justify-between">
-        {["1. L'idée & Le Style", "2. Les Paroles", "3. La Musique"].map((label, i) => (
-          <div key={label} className="flex items-center gap-3 flex-1 justify-center">
-            <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-              step > i + 1 ? "bg-emerald text-white" : step === i + 1 ? "bg-safran text-ink shadow-sm font-bold" : "bg-line text-muted"
-            }`}>
-              {step > i + 1 ? <Check size={16} /> : i + 1}
-            </span>
-            <span className={`text-xs sm:text-sm font-semibold hidden sm:inline ${step === i + 1 ? "text-ink font-bold" : "text-muted"}`}>{label}</span>
-            {i < 2 && <span className="hidden md:block w-12 h-px bg-line ml-3" />}
-          </div>
-        ))}
+      {/* Stepper avec icones et animations */}
+      <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-3 sm:p-5 mb-6 sm:mb-8 shadow-sm flex items-center justify-between">
+        {STEP_LABELS.map((label, i) => {
+          const StepIcon = STEP_ICONS[i];
+          const done = step > i + 1;
+          const active = step === i + 1;
+          return (
+            <div key={label} className="flex items-center gap-2 sm:gap-3 flex-1 justify-center">
+              <span className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all duration-300 ${
+                done ? "bg-emerald text-white animate-popIn" : active ? "bg-safran text-ink shadow-sm font-bold animate-pulseGlow" : "bg-line text-muted"
+              }`}>
+                {done ? <Check size={16} /> : <StepIcon size={16} />}
+              </span>
+              <span className={`text-xs sm:text-sm font-semibold hidden sm:inline transition-colors ${active ? "text-ink font-bold" : "text-muted"}`}>{label}</span>
+              {i < 2 && <span className="hidden md:block w-8 lg:w-12 h-px bg-line ml-2 sm:ml-3" />}
+            </div>
+          );
+        })}
       </div>
 
       {error && (
-        <div className="bg-henne/10 text-henne rounded-2xl px-5 py-4 mb-6 text-xs sm:text-sm flex items-start gap-3 border border-henne/20">
+        <div className="bg-henne/10 text-henne rounded-2xl px-4 py-3 sm:py-4 mb-6 text-xs sm:text-sm flex items-start gap-3 border border-henne/20 animate-slideDown">
           <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
           <div>{error}</div>
         </div>
@@ -435,14 +464,14 @@ export default function CreateSong() {
 
       {/* STEP 1 : BRIEF */}
       {step === 1 && (
-        <form onSubmit={hasExistingLyrics ? handleResubmitIdea : handleCreateDraft} className="bg-white border border-line rounded-3xl p-6 sm:p-10 space-y-7 shadow-sm">
-          
+        <form onSubmit={hasExistingLyrics ? handleResubmitIdea : handleCreateDraft} className="bg-white border border-line rounded-2xl sm:rounded-3xl p-5 sm:p-10 space-y-6 sm:space-y-7 shadow-sm animate-slideUp">
+
           <div className="flex items-start justify-between flex-wrap gap-4 border-b border-line pb-5">
             <div>
-              <div className="inline-flex items-center gap-1.5 bg-safran/10 text-safran border border-safran/20 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-                <Sparkles size={13} /> Studio de Haute Création Musicale
+              <div className="inline-flex items-center gap-1.5 bg-safran/10 text-safran border border-safran/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+                <Sparkles size={13} /> Studio de Création Musicale
               </div>
-              <h1 className="font-display text-2xl sm:text-3xl font-bold">
+              <h1 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold">
                 {hasExistingLyrics ? "Modifier votre projet" : "Quelle est votre idée ?"}
               </h1>
               <p className="text-muted text-xs sm:text-sm mt-1">
@@ -453,15 +482,15 @@ export default function CreateSong() {
             </div>
           </div>
 
-          {/* SUGGESTIONS DE PROMPTS REPLIABLES (EN HAUT) */}
+          {/* Suggestions de prompts */}
           <details className="bg-cream/80 border border-safran/30 rounded-2xl overflow-hidden group">
-            <summary className="p-3.5 sm:p-4 font-bold text-xs sm:text-sm text-emerald cursor-pointer flex items-center justify-between list-none hover:bg-safran/10 transition-colors">
+            <summary className="p-3 sm:p-4 font-bold text-xs sm:text-sm text-emerald cursor-pointer flex items-center justify-between list-none hover:bg-safran/10 transition-colors">
               <span className="flex items-center gap-2">
                 <Lightbulb size={18} className="text-safran" />
                 <span>Besoin d'inspiration ? Choisir une idée pré-remplie</span>
               </span>
-              <span className="text-xs bg-white px-3 py-1 rounded-full border border-line font-bold text-muted flex items-center gap-1">
-                Menu des idées <ChevronDown size={14} className="group-open:rotate-180 transition-transform" />
+              <span className="text-xs bg-white px-2 sm:px-3 py-1 rounded-full border border-line font-bold text-muted flex items-center gap-1">
+                <span className="hidden sm:inline">Menu des idées</span> <ChevronDown size={14} className="group-open:rotate-180 transition-transform" />
               </span>
             </summary>
 
@@ -486,7 +515,7 @@ export default function CreateSong() {
               </select>
 
               {templateAppliedNotice && (
-                <div className="text-xs font-bold text-emerald flex items-center gap-1.5 bg-emerald/10 p-2.5 rounded-xl border border-emerald/20">
+                <div className="text-xs font-bold text-emerald flex items-center gap-1.5 bg-emerald/10 p-2.5 rounded-xl border border-emerald/20 animate-popIn">
                   <CheckCircle2 size={14} /> {templateAppliedNotice}
                 </div>
               )}
@@ -496,7 +525,7 @@ export default function CreateSong() {
           {/* 1. Usage Principal */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-3">1. Usage principal</label>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {CATEGORIES.map((cat) => {
                 const active = form.occasion === cat.id;
                 return (
@@ -504,13 +533,13 @@ export default function CreateSong() {
                     key={cat.id}
                     type="button"
                     onClick={() => setForm({ ...form, occasion: cat.id })}
-                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    className={`p-3 sm:p-4 rounded-2xl border text-left transition-all cursor-pointer active:scale-[0.97] ${
                       active ? "border-safran bg-safran/10 text-ink font-bold shadow-sm ring-2 ring-safran/30" : "border-line bg-white hover:border-safran/40 text-muted"
                     }`}
                   >
-                    <cat.Icon size={22} className={active ? "text-safran mb-2" : "text-emerald mb-2"} />
+                    <cat.Icon size={20} className={active ? "text-safran mb-1.5" : "text-emerald mb-1.5"} />
                     <div className="text-xs sm:text-sm font-bold leading-tight">{cat.label}</div>
-                    <div className="text-[0.7rem] opacity-70 mt-1">{cat.desc}</div>
+                    <div className="text-[0.65rem] sm:text-[0.7rem] opacity-70 mt-0.5">{cat.desc}</div>
                   </button>
                 );
               })}
@@ -518,7 +547,7 @@ export default function CreateSong() {
           </div>
 
           {/* 2 & 3. Dialecte et Style Musical */}
-          <div className="grid sm:grid-cols-2 gap-6">
+          <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">2. Dialecte & Langue</label>
               <select className="input-field cursor-pointer font-medium" value={form.dialect} onChange={(e) => setForm({ ...form, dialect: e.target.value })}>
@@ -544,7 +573,7 @@ export default function CreateSong() {
                     key={v.value}
                     type="button"
                     onClick={() => setForm({ ...form, voice_type: v.value })}
-                    className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`p-2.5 sm:p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer active:scale-[0.97] ${
                       active ? "border-safran bg-safran/10 text-ink font-bold shadow-sm ring-2 ring-safran/30" : "border-line bg-white hover:border-safran/40 text-muted"
                     }`}
                   >
@@ -556,63 +585,84 @@ export default function CreateSong() {
             </div>
           </div>
 
-          {/* 5. Destinataire ou Marque */}
+          {/* 5. Destinataire */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">5. Destinataire, marque ou prénom (optionnel)</label>
             <input className="input-field" value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })} placeholder="Ex : Marque 'Atlas Wear', Yasmine, Mon pote Reda" />
           </div>
 
-          {/* 6. Brief / Instructions */}
+          {/* 6. Brief */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">6. Vos instructions & détails</label>
             <textarea
-              className="input-field min-h-[140px] text-sm sm:text-base leading-relaxed"
+              className="input-field min-h-[120px] sm:min-h-[140px] text-sm sm:text-base leading-relaxed"
               value={form.brief}
               onChange={(e) => setForm({ ...form, brief: e.target.value })}
               placeholder="Racontez l'histoire, le message, la blague ou les détails sur le produit à mettre en valeur dans la chanson..."
             />
           </div>
 
-          {/* BOUTON GÉANT */}
-          <button type="submit" disabled={loading || !online} className="w-full flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-henne/40 transition-all text-base sm:text-lg disabled:opacity-50 cursor-pointer border border-white/10">
+          {/* Bouton submit */}
+          <button type="submit" disabled={loading || !online} className="w-full flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold py-3.5 sm:py-4 rounded-2xl shadow-lg hover:shadow-henne/40 transition-all text-sm sm:text-base lg:text-lg disabled:opacity-50 cursor-pointer border border-white/10 active:scale-[0.98]">
             {loading
-              ? <><Loader2 size={20} className="animate-spin" /> {hasExistingLyrics ? "Régénération des paroles..." : "Rédaction des paroles par le studio..."}</>
-              : <>{hasExistingLyrics ? "Régénérer les paroles avec cette idée" : "Générer les paroles gratuites en 3 min"} <ArrowRight size={18} /></>}
+              ? <><Loader2 size={20} className="animate-spin" /> {hasExistingLyrics ? "Régénération des paroles..." : "Rédaction des paroles..."}</>
+              : <>{hasExistingLyrics ? "Régénérer les paroles" : "Générer les paroles gratuites"} <ArrowRight size={18} /></>}
           </button>
         </form>
       )}
 
       {/* STEP 2 : PAROLES */}
       {step === 2 && (
-        <div className="bg-white border border-line rounded-3xl p-6 sm:p-10 shadow-sm space-y-6">
+        <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-sm space-y-5 sm:space-y-6 animate-slideUp relative">
+          <FloatingNotes show={lyricsReady} />
+
           <div className="flex items-center justify-between border-b border-line pb-4 flex-wrap gap-2">
-            <div>
-              <h1 className="font-display text-2xl font-bold">Vos paroles sur-mesure</h1>
-              <p className="text-muted text-xs sm:text-sm">Relisez et modifiez librement. C'est 100% gratuit.</p>
+            <div className="flex items-center gap-3">
+              {/* Pastille note de musique pour les paroles */}
+              <div className="badge-lyrics animate-popIn">
+                <Music size={12} /> Paroles
+              </div>
+              <div>
+                <h1 className="font-display text-xl sm:text-2xl font-bold">Vos paroles sur-mesure</h1>
+                <p className="text-muted text-xs sm:text-sm">Relisez et modifiez librement. C'est 100% gratuit.</p>
+              </div>
             </div>
-            <button onClick={handleGoBackAndResubmit} className="text-xs font-semibold text-emerald hover:underline flex items-center gap-1 bg-cream px-3.5 py-2 rounded-xl border border-line cursor-pointer">
+            <button onClick={handleGoBackAndResubmit} className="text-xs font-semibold text-emerald hover:underline flex items-center gap-1 bg-cream px-3 py-2 rounded-xl border border-line cursor-pointer active:scale-[0.97]">
               <ChevronLeft size={14} /> Modifier l'idée
             </button>
           </div>
 
           {composing ? (
-            <div className="py-12">
+            <div className="py-10 sm:py-12 relative">
+              <FloatingNotes show={true} />
               <ProgressCircle estimatedSeconds={35} active={composing} size={100} label="Le studio compose et chante votre morceau..." />
+              <div className="flex justify-center gap-2 mt-4">
+                <span className="badge-music animate-micPulse"><Mic2 size={12} /> Composition en cours</span>
+              </div>
             </div>
           ) : loading && !lyrics ? (
-            <div className="py-12">
+            <div className="py-10 sm:py-12">
               <ProgressCircle estimatedSeconds={12} active={loading} size={90} label="Rédaction des paroles en arabe authentique..." />
+              <div className="flex justify-center mt-4">
+                <span className="badge-lyrics animate-pulse"><Music size={12} /> Écriture des paroles</span>
+              </div>
             </div>
           ) : (
             <>
-              {/* Overlay de régénération */}
               {regeneratingLyrics && (
                 <div className="relative">
                   <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 rounded-2xl flex flex-col items-center justify-center gap-3 min-h-[200px]">
                     <Loader2 size={28} className="text-emerald animate-spin" />
                     <p className="text-sm font-semibold text-ink">Régénération des paroles en cours...</p>
-                    <p className="text-xs text-muted">Les nouvelles paroles vont remplacer les actuelles</p>
+                    <span className="badge-lyrics"><Music size={12} /> Nouvelles paroles</span>
                   </div>
+                </div>
+              )}
+
+              {lyricsReady && (
+                <div className="bg-emerald/10 text-emerald rounded-xl px-4 py-3 text-xs sm:text-sm flex items-center gap-2 border border-emerald/20 animate-popIn">
+                  <CheckCircle2 size={16} className="animate-bounceIn" />
+                  Paroles générées avec succès !
                 </div>
               )}
 
@@ -620,7 +670,7 @@ export default function CreateSong() {
               <div className="flex border-b border-line items-center">
                 <button
                   onClick={() => setActiveTab("darija")}
-                  className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+                  className={`px-4 sm:px-5 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
                     activeTab === "darija" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
                   }`}
                 >
@@ -628,7 +678,7 @@ export default function CreateSong() {
                 </button>
                 <button
                   onClick={() => setActiveTab("french")}
-                  className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+                  className={`px-4 sm:px-5 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
                     activeTab === "french" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
                   }`}
                 >
@@ -643,24 +693,24 @@ export default function CreateSong() {
 
               {activeTab === "darija" ? (
                 <textarea
-                  className="input-field min-h-[320px] font-arabic text-right text-base sm:text-xl leading-loose"
+                  className="input-field min-h-[280px] sm:min-h-[320px] font-arabic text-right text-base sm:text-xl leading-loose"
                   dir="rtl"
                   value={lyrics}
                   onChange={(e) => handleLyricsChange("darija", e.target.value)}
                 />
               ) : (
                 <textarea
-                  className="input-field min-h-[320px] text-sm sm:text-base leading-relaxed"
+                  className="input-field min-h-[280px] sm:min-h-[320px] text-sm sm:text-base leading-relaxed"
                   value={lyricsFr}
                   onChange={(e) => handleLyricsChange("french", e.target.value)}
                 />
               )}
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-3">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-3">
                 <button
                   onClick={() => handleGenerateLyrics()}
                   disabled={loading || regeneratingLyrics}
-                  className="flex-1 flex items-center justify-center gap-2 border border-emerald text-emerald hover:bg-emerald hover:text-white font-bold py-3.5 rounded-xl transition-all text-sm disabled:opacity-50 cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-2 border border-emerald text-emerald hover:bg-emerald hover:text-white font-bold py-3 sm:py-3.5 rounded-xl transition-all text-sm disabled:opacity-50 cursor-pointer active:scale-[0.97]"
                 >
                   {regeneratingLyrics
                     ? <><Loader2 size={16} className="animate-spin" /> Régénération...</>
@@ -669,9 +719,9 @@ export default function CreateSong() {
                 <button
                   onClick={handleValidateLyrics}
                   disabled={loading || regeneratingLyrics || !online}
-                  className="flex-1 flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold py-3.5 rounded-xl shadow-md transition-all text-sm sm:text-base cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold py-3 sm:py-3.5 rounded-xl shadow-md transition-all text-sm sm:text-base cursor-pointer active:scale-[0.98]"
                 >
-                  Valider et Composer la Musique <ArrowRight size={18} />
+                  <Mic2 size={16} /> Valider et Composer <ArrowRight size={16} />
                 </button>
               </div>
             </>

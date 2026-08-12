@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase, callFunction } from "../lib/supabaseClient.js";
+import { PLAN_CONTENT, PLAN_ORDER, formatEuros } from "../lib/planContent.js";
 
 // --- IMAGES DU DIAPORAMA DE FOND HERO ---
 const HERO_SLIDES = [
@@ -97,68 +98,7 @@ const FAQ_ITEMS = [
   { q: "Quels moyens de paiement acceptez-vous ?", a: "PayPal (cartes bancaires) et Fedapay (Mobile Money Afrique/Maghreb, Orange Money, Wave, virement)." },
 ];
 
-// --- CONTENU MARKETING PROGRESSIF PAR PACK ---
-const PLAN_CONTENT = {
-  pack4: {
-    name: "Découverte",
-    desc: "Pour tester vos premiers sons",
-    popular: false,
-    modelTag: "Modèle Audio Standard HD",
-    features: [
-      "4 musiques complètes (Audio HD + Pochette)",
-      "Paroles gratuites, modifiables & régénérables",
-      "Crédits valables sans limite de temps",
-      "Usage personnel & partages réseaux",
-    ],
-  },
-  pack10: {
-    name: "Créateur TikTok & Reels",
-    desc: "Le choix le plus populaire sur les réseaux",
-    popular: true,
-    modelTag: "Modèle Audio Haute-Fidélité (-20% de réduction)",
-    features: [
-      "🔥 -20% de réduction (0,60 € / chanson)",
-      "Tout le plan Découverte inclus",
-      "10 musiques complètes HD",
-      "Génération musicale prioritaire",
-      "Clips Vidéos 9:16 (Prochainement)",
-    ],
-  },
-  pack20: {
-    name: "Pro & Business",
-    desc: "Pour les marques, pubs et grands événements",
-    popular: false,
-    modelTag: "Modèle Studio Pro (Google Lyria 3 Pro)",
-    features: [
-      "⚡ -33% de réduction (0,50 € / chanson)",
-      "Tout le plan Créateur inclus",
-      "20 musiques complètes HD",
-      "Auteur-parolier avancé (Gemini 3.5 Pro)",
-      "Droits d'usage commercial & pubs inclus",
-      "Support prioritaire dédié sous 12h",
-    ],
-  },
-  pack40: {
-    name: "Studio VIP",
-    desc: "Pour les créateurs fréquents et agences",
-    popular: false,
-    modelTag: "Modèle Master Studio Ultra-HD (-35% de réduction)",
-    features: [
-      "👑 -35% de réduction (0,49 € / chanson)",
-      "Tout le plan Pro & Business inclus",
-      "40 musiques complètes HD",
-      "Génération instantanée zéro attente",
-      "Support privé WhatsApp 7j/7",
-      "Badge Créateur VIP sur le profil",
-    ],
-  },
-};
-
-const PLAN_ORDER = ["pack4", "pack10", "pack20", "pack40"];
-
-function formatEuros(cents) {
-  return (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
-}
+// PLAN_CONTENT, PLAN_ORDER, formatEuros importés depuis lib/planContent.js
 
 const REVIEWS_50 = [
   { id: 1, initial: "K", name: "Khadija B.", meta: "Paris · Reel Instagram", text: "J'ai créé un son en darija pour mon vlog de voyage au Maroc. Ma vidéo a dépassé les 100k vues sur Reels, incroyable !" },
@@ -632,7 +572,7 @@ function Reviews() {
   );
 }
 
- // --- CARTES TARIFS DYNAMIQUES AÉRÉES ET COMPACTES ---
+ // --- CARTES TARIFS DYNAMIQUES AVEC BENEFICES HONNETES ---
 function Pricing() {
   const [plans, setPlans] = useState(null);
 
@@ -664,58 +604,68 @@ function Pricing() {
         <div className="text-center mb-8 sm:mb-10">
           <div className="text-henne text-xs sm:text-sm font-bold uppercase tracking-widest mb-2">Tarifs</div>
           <h2 className="font-display font-bold text-2xl sm:text-3xl lg:text-4xl">Simple, transparent, sans abonnement</h2>
-          <p className="text-muted text-xs sm:text-base mt-1.5">Première création offerte. Rédaction des paroles gratuite. Vous ne débloquez que le projet final qui vous plaît.</p>
+          <p className="text-muted text-xs sm:text-base mt-1.5">Rédaction des paroles gratuite. Vous ne débloquez que le projet final qui vous plaît.</p>
         </div>
 
-        {/* Grille compacte */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-stretch">
-          {(plans ?? []).map((plan) => (
-            <div key={plan.id} className={`relative rounded-2xl flex flex-col justify-between overflow-hidden transition-all duration-200 hover:-translate-y-1 ${plan.popular ? "bg-[#0C0F0E] text-white border-2 border-safran shadow-xl ring-1 ring-safran/20" : "bg-white border border-line/80 hover:border-safran/50 shadow-xs hover:shadow-md"}`}>
-              {plan.popular && (
-                <div className="bg-safran text-ink text-[0.65rem] font-extrabold uppercase tracking-wider text-center py-1.5">Le plus choisi</div>
-              )}
-              <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className={`text-xs font-extrabold uppercase tracking-wider ${plan.popular ? "text-safran" : "text-emerald"}`}>{plan.name}</span>
-                    {plan.discountBadge && (
-                      <span className={`text-[0.62rem] font-extrabold px-2 py-0.5 rounded-full ${plan.popular ? "bg-henne text-white" : "bg-safran/15 text-safran border border-safran/30"}`}>
-                        {plan.discountBadge}
+          {(plans ?? []).map((plan) => {
+            const PlanIcon = plan.icon;
+            return (
+              <div key={plan.id} className={`relative rounded-2xl flex flex-col justify-between overflow-hidden transition-all duration-300 hover:-translate-y-1 ${plan.popular ? "bg-[#0C0F0E] text-white border-2 border-safran shadow-xl ring-1 ring-safran/20" : "bg-white border border-line/80 hover:border-safran/50 shadow-xs hover:shadow-md"}`}>
+                {plan.popular && (
+                  <div className="bg-safran text-ink text-[0.65rem] font-extrabold uppercase tracking-wider text-center py-1.5">Le plus choisi</div>
+                )}
+                <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className={`flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider ${plan.popular ? "text-safran" : "text-emerald"}`}>
+                        {PlanIcon && <PlanIcon size={14} />}
+                        {plan.name}
                       </span>
-                    )}
-                  </div>
-                  <p className={`text-[0.72rem] mb-2.5 leading-snug ${plan.popular ? "text-white/60" : "text-muted"}`}>{plan.desc}</p>
-                  
-                  {plan.modelTag && (
-                    <div className="mb-3">
-                      <span className={`inline-block text-[0.65rem] font-bold px-2.5 py-0.5 rounded-md border ${
-                        plan.popular ? "bg-white/10 text-safran-bright border-white/15" : "bg-cream text-emerald border-line"
-                      }`}>
-                        ⚡ {plan.modelTag}
-                      </span>
+                      {plan.discountBadge && (
+                        <span className={`text-[0.62rem] font-extrabold px-2 py-0.5 rounded-full ${plan.popular ? "bg-henne text-white" : "bg-safran/15 text-safran border border-safran/30"}`}>
+                          {plan.discountBadge}
+                        </span>
+                      )}
                     </div>
-                  )}
+                    <p className={`text-[0.72rem] mb-3 leading-snug ${plan.popular ? "text-white/60" : "text-muted"}`}>{plan.desc}</p>
 
-                  <div className="mb-0.5 flex items-baseline gap-1">
-                    <span className={`font-display text-3xl font-extrabold leading-none ${plan.popular ? "text-white" : "text-ink"}`}>{plan.price}</span>
+                    <div className="mb-0.5 flex items-baseline gap-1">
+                      <span className={`font-display text-3xl font-extrabold leading-none ${plan.popular ? "text-white" : "text-ink"}`}>{plan.price}</span>
+                    </div>
+                    <div className={`text-xs mb-4 ${plan.popular ? "text-white/40" : "text-muted"}`}>{plan.songs} musiques · <span className="font-bold">{plan.perSong}</span> / son</div>
+
+                    {/* Bénéfices clés */}
+                    <div className={`rounded-xl p-2.5 mb-4 space-y-1.5 text-[0.7rem] ${plan.popular ? "bg-white/5 border border-white/10" : "bg-cream/80 border border-line/60"}`}>
+                      <div className={`flex items-center gap-1.5 ${plan.popular ? "text-white/80" : "text-muted"}`}>
+                        <span className={plan.popular ? "text-safran" : "text-emerald"}>♪</span> Durée max : <strong className={plan.popular ? "text-white" : "text-ink"}>{plan.benefits.duration}</strong>
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${plan.popular ? "text-white/80" : "text-muted"}`}>
+                        <span className={plan.popular ? "text-safran" : "text-emerald"}>✉</span> {plan.benefits.support}
+                      </div>
+                      {plan.benefits.commercial && (
+                        <div className={`flex items-center gap-1.5 font-bold ${plan.popular ? "text-safran" : "text-emerald"}`}>
+                          <span>✓</span> Usage commercial inclus
+                        </div>
+                      )}
+                    </div>
+
+                    <ul className="space-y-2 mb-5">
+                      {(plan.features || []).map((f) => (
+                        <li key={f} className={`flex items-start gap-2 text-xs sm:text-[0.78rem] ${plan.popular ? "text-white/80" : "text-muted"}`}>
+                          <span className={`mt-0.5 font-bold ${plan.popular ? "text-safran" : "text-emerald"}`}>✓</span> {f}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <div className={`text-xs mb-4 ${plan.popular ? "text-white/40" : "text-muted"}`}>{plan.songs} musiques · <span className="font-bold">{plan.perSong}</span> / son</div>
-                  
-                  <ul className="space-y-2 mb-5">
-                    {(plan.features || []).map((f) => (
-                      <li key={f} className={`flex items-start gap-2 text-xs sm:text-[0.78rem] ${plan.popular ? "text-white/80" : "text-muted"}`}>
-                        <span className={`mt-0.5 font-bold ${plan.popular ? "text-safran" : "text-emerald"}`}>✓</span> {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
 
-                <Link to="/inscription" className={`block text-center rounded-xl py-3 font-bold text-xs sm:text-sm transition-colors mt-auto ${plan.popular ? "bg-safran hover:bg-safran-bright text-ink" : "bg-emerald hover:bg-emerald-light text-white"}`}>
-                  Choisir ce plan
-                </Link>
+                  <Link to="/inscription" className={`block text-center rounded-xl py-3 font-bold text-xs sm:text-sm transition-all active:scale-[0.97] mt-auto ${plan.popular ? "bg-safran hover:bg-safran-bright text-ink" : "bg-emerald hover:bg-emerald-light text-white"}`}>
+                    Choisir ce plan
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
