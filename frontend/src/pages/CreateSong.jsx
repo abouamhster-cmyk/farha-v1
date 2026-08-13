@@ -656,7 +656,7 @@ export default function CreateSong() {
                         activeTab === "darija" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
                       }`}
                     >
-                      Paroles (Arabe)
+                      {DIALECTS.find(d => d.value === form.dialect)?.label || "Paroles"}
                     </button>
                     <div className={`flex items-center border-b-2 transition-colors ${activeTab === "translation" ? "border-emerald" : "border-transparent"}`}>
                       <button
