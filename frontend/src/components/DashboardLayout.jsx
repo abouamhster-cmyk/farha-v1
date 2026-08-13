@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import {
-  Music, LayoutDashboard, PlusCircle, CreditCard, LogOut, Menu, X, Shield
+  Music, LayoutDashboard, PlusCircle, CreditCard, LogOut, Menu, X, Shield, Trash2
 } from "lucide-react";
+import { callFunction } from "../lib/supabaseClient.js";
+import ConfirmModal from "./ConfirmModal.jsx";
 
 const NAV_ITEMS = [
   { to: "/tableau-de-bord", label: "Tableau de bord", Icon: LayoutDashboard },
@@ -18,7 +20,22 @@ export default function DashboardLayout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const initials = (profile?.full_name ?? "U").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await callFunction("delete-account", {});
+      await signOut();
+      navigate("/");
+    } catch (err) {
+      console.error("Erreur suppression:", err);
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  }
 
   function NavContent({ onNav }) {
     return (
@@ -71,12 +88,21 @@ export default function DashboardLayout({ children }) {
               <div className="text-[0.7rem] text-white/35">{profile?.credits ?? 0} crédit{(profile?.credits ?? 0) !== 1 ? "s" : ""}</div>
             </div>
           </div>
-          <button
-            onClick={() => signOut().then(() => navigate("/"))}
-            className="flex items-center gap-2 text-white/35 hover:text-white/60 text-[0.75rem] font-medium transition-colors"
-          >
-            <LogOut size={13} /> Déconnexion
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => signOut().then(() => navigate("/"))}
+              className="flex items-center gap-2 text-white/35 hover:text-white/60 text-[0.75rem] font-medium transition-colors"
+            >
+              <LogOut size={13} /> Déconnexion
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-white/20 hover:text-henne text-[0.65rem] transition-colors"
+              title="Supprimer mon compte"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
         </div>
       </>
     );
@@ -122,6 +148,18 @@ export default function DashboardLayout({ children }) {
 
         <main className="flex-1 overflow-x-hidden">{children}</main>
       </div>
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteAccount}
+        title="Supprimer votre compte ?"
+        confirmLabel={deleting ? "Suppression..." : "Supprimer définitivement"}
+        confirmColor="bg-henne hover:bg-henne-light"
+      >
+        <p>Cette action est <strong>irréversible</strong>. Toutes vos chansons, fichiers audio et données seront supprimés définitivement.</p>
+        <p className="mt-2">Les crédits restants ne seront pas remboursés.</p>
+      </ConfirmModal>
     </div>
   );
 }

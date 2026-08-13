@@ -18,6 +18,7 @@ const Credits = lazy(() => import("./pages/Credits.jsx"));
 const Admin = lazy(() => import("./pages/Admin.jsx"));
 const Legal = lazy(() => import("./pages/Legal.jsx"));
 const PublicSong = lazy(() => import("./pages/PublicSong.jsx"));
+const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 
 function PageLoader() {
   return (
@@ -70,7 +71,7 @@ export default function App() {
         <Route path="/credits" element={<AppLayout><Credits /></AppLayout>} />
         <Route path="/admin" element={<AppLayout><Admin /></AppLayout>} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

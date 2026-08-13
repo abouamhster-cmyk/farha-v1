@@ -1,73 +1,35 @@
-import { useNavigate } from 'react-router-dom'
+import { Link } from "react-router-dom";
+import { Home, Music } from "lucide-react";
 
 export default function NotFound() {
-  const navigate = useNavigate()
-
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#FAF5EC',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '40px 20px',
-      fontFamily: "'Inter', sans-serif",
-      textAlign: 'center',
-    }}>
-      <div style={{
-        fontFamily: "'Amiri', serif",
-        fontSize: '5rem',
-        color: '#E89528',
-        marginBottom: '8px',
-      }}>
-        ٤٠٤
-      </div>
-      <h1 style={{
-        fontFamily: "'Fraunces', serif",
-        fontSize: '2.2rem',
-        fontWeight: 700,
-        color: '#14110F',
-        marginBottom: '12px',
-      }}>
-        Page introuvable
-      </h1>
-      <p style={{ color: '#5C5449', marginBottom: '32px', maxWidth: '400px', fontSize: '1rem' }}>
-        Cette page n'existe pas.
-      </p>
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            padding: '14px 28px',
-            borderRadius: '8px',
-            border: 'none',
-            background: '#0A3832',
-            color: '#FFF',
-            fontWeight: 700,
-            fontSize: '1rem',
-            cursor: 'pointer',
-          }}
-        >
-          ← Retour à l'accueil
-        </button>
-        <button
-          onClick={() => navigate('/create')}
-          style={{
-            padding: '14px 28px',
-            borderRadius: '8px',
-            border: 'none',
-            background: '#B83A28',
-            color: '#FFF',
-            fontWeight: 700,
-            fontSize: '1rem',
-            cursor: 'pointer',
-            boxShadow: '0 8px 20px rgba(184, 58, 40, 0.3)',
-          }}
-        >
-          Créer une chanson →
-        </button>
+    <div className="min-h-screen bg-cream flex items-center justify-center px-6">
+      <div className="text-center max-w-md">
+        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald to-[#0C0F0E] flex items-center justify-center mx-auto mb-6 shadow-xl">
+          <Music size={36} className="text-safran" />
+        </div>
+
+        <h1 className="font-display text-6xl font-bold text-emerald mb-2">404</h1>
+        <p className="text-lg font-semibold text-ink mb-2">Page introuvable</p>
+        <p className="text-sm text-muted mb-8">
+          Cette page n'existe pas ou a été déplacée.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 bg-emerald hover:bg-emerald-light text-white font-bold px-6 py-3 rounded-xl transition-colors text-sm"
+          >
+            <Home size={16} /> Retour à l'accueil
+          </Link>
+          <Link
+            to="/creer"
+            className="inline-flex items-center gap-2 border border-emerald text-emerald hover:bg-emerald hover:text-white font-bold px-6 py-3 rounded-xl transition-colors text-sm"
+          >
+            <Music size={16} /> Créer une chanson
+          </Link>
+        </div>
       </div>
     </div>
-  )
+  );
 }
