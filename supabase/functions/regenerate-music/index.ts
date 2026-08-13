@@ -2,10 +2,14 @@ declare const Deno: any;
 
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { getSupabaseAdmin, getAuthedUser } from "../_shared/supabaseAdmin.ts";
+import { rateLimit, getRateLimitKey, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 Deno.serve(async (req: Request) => {
   const opt = handleOptions(req);
   if (opt) return opt;
+
+  const { allowed, retryAfter } = rateLimit(getRateLimitKey(req, "regen"), 5, 60_000);
+  if (!allowed) return rateLimitResponse(retryAfter);
 
   try {
     const user = await getAuthedUser(req);

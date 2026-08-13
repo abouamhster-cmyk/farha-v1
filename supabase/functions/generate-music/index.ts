@@ -5,6 +5,7 @@ import { getSupabaseAdmin, getAuthedUser } from "../_shared/supabaseAdmin.ts";
 import { generateAndUploadCover } from "../_shared/coverImage.ts";
 import { detectSensitiveTopic, sensitiveTopicMessage } from "../_shared/moderation.ts";
 import { truncateAudioBytes } from "../_shared/audioTruncate.ts";
+import { rateLimit, getRateLimitKey, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 const PREVIEW_SECONDS = 30;
 const GEMINI_RETRIES = 2;
@@ -312,6 +313,9 @@ async function callVertexLyria(projectId: string, location: string, token: strin
 Deno.serve(async (req: Request) => {
   const opt = handleOptions(req);
   if (opt) return opt;
+
+  const { allowed, retryAfter } = rateLimit(getRateLimitKey(req, "gen-music"), 5, 60_000);
+  if (!allowed) return rateLimitResponse(retryAfter);
 
   const admin = getSupabaseAdmin();
   let songIdForError: string | null = null;

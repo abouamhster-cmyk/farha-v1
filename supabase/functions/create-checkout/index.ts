@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { getSupabaseAdmin, getAuthedUser } from "../_shared/supabaseAdmin.ts";
+import { rateLimit, getRateLimitKey, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://farha-v1.vercel.app";
 
@@ -55,6 +56,9 @@ async function createFedapaySession(userId: string, pack: any, orderId: string) 
 Deno.serve(async (req: Request) => {
   const opt = handleOptions(req);
   if (opt) return opt;
+
+  const { allowed, retryAfter } = rateLimit(getRateLimitKey(req, "checkout"), 10, 60_000);
+  if (!allowed) return rateLimitResponse(retryAfter);
 
   try {
     const user = await getAuthedUser(req);

@@ -3,6 +3,7 @@ declare const Deno: any;
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { getSupabaseAdmin, getAuthedUser } from "../_shared/supabaseAdmin.ts";
 import { detectSensitiveTopic, sensitiveTopicMessage } from "../_shared/moderation.ts";
+import { rateLimit, getRateLimitKey, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 const MAX_REGENERATIONS = 4;
 const MIN_LINES = 16;
@@ -115,6 +116,9 @@ function parseLyrics(raw: string): { darija: string; french: string } {
 Deno.serve(async (req: Request) => {
   const opt = handleOptions(req);
   if (opt) return opt;
+
+  const { allowed, retryAfter } = rateLimit(getRateLimitKey(req, "gen-lyrics"), 10, 60_000);
+  if (!allowed) return rateLimitResponse(retryAfter);
 
   try {
     const user = await getAuthedUser(req);

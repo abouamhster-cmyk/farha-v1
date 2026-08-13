@@ -6,10 +6,14 @@
 // atomique pour éviter qu'un double-clic ne consomme deux crédits.
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { getSupabaseAdmin, getAuthedUser } from "../_shared/supabaseAdmin.ts";
+import { rateLimit, getRateLimitKey, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
+
+  const { allowed, retryAfter } = rateLimit(getRateLimitKey(req, "unlock"), 10, 60_000);
+  if (!allowed) return rateLimitResponse(retryAfter);
 
   try {
     const user = await getAuthedUser(req);
