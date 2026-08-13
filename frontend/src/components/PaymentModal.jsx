@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { callFunction } from "../lib/supabaseClient.js";
-import { X, CreditCard, Loader2, Sparkles, ShieldCheck } from "lucide-react";
+import { X, Loader2, Sparkles, ShieldCheck, Smartphone } from "lucide-react";
 
 export default function PaymentModal({ pack, onClose }) {
-  const [provider, setProvider] = useState("stripe"); // "stripe" | "paypal" | "fedapay"
+  const [provider, setProvider] = useState("paypal"); // "paypal" | "fedapay"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -26,7 +26,7 @@ export default function PaymentModal({ pack, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      {/* CARTE MODAL : BARRE DE SCROLL MASQUÉE & HAUTEUR ULTRA-COMPACTE DE HIGH-PRECISION */}
+      {/* CARTE MODAL SIMPLIFIÉE (2 OPTIONS DE PAIEMENT CLAIRES) */}
       <div className="relative w-full max-w-[430px] bg-white rounded-3xl p-5 sm:p-6 border border-line shadow-2xl my-auto max-h-[92vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden space-y-3.5 sm:space-y-4">
         
         {/* Bouton Fermer */}
@@ -60,48 +60,28 @@ export default function PaymentModal({ pack, onClose }) {
           </div>
         </div>
 
-        {/* Choix des Moyens de Paiement */}
+        {/* Choix des Moyens de Paiement (2 Options) */}
         <div className="space-y-1.5">
           <label className="block text-[0.68rem] font-bold uppercase tracking-wider text-muted">
             Moyen de paiement
           </label>
 
-          <div className="grid grid-cols-1 gap-2">
-            {/* Stripe */}
-            <button
-              type="button"
-              onClick={() => setProvider("stripe")}
-              className={`p-2.5 sm:p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
-                provider === "stripe"
-                  ? "border-safran bg-safran/10 text-ink font-bold shadow-xs ring-2 ring-safran/30"
-                  : "border-line bg-white hover:border-emerald/40 text-muted"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <CreditCard size={16} className={provider === "stripe" ? "text-safran" : "text-emerald"} />
-                <div>
-                  <div className="text-xs font-bold leading-tight">Carte Bancaire (Stripe)</div>
-                  <div className="text-[0.65rem] opacity-75">Visa, Mastercard, Carte Bleue</div>
-                </div>
-              </div>
-              <span className="text-[0.65rem] font-bold text-emerald bg-emerald/10 px-2 py-0.5 rounded-md">Sécurisé</span>
-            </button>
-
-            {/* PayPal */}
+          <div className="grid grid-cols-1 gap-2.5">
+            {/* PayPal & Carte Bancaire */}
             <button
               type="button"
               onClick={() => setProvider("paypal")}
-              className={`p-2.5 sm:p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+              className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                 provider === "paypal"
                   ? "border-safran bg-safran/10 text-ink font-bold shadow-xs ring-2 ring-safran/30"
                   : "border-line bg-white hover:border-emerald/40 text-muted"
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span className="font-bold text-sm text-blue-600">P</span>
+              <div className="flex items-center gap-3">
+                <span className="font-extrabold text-base text-blue-600">P</span>
                 <div>
-                  <div className="text-xs font-bold leading-tight">PayPal</div>
-                  <div className="text-[0.65rem] opacity-75">Solde PayPal ou carte</div>
+                  <div className="text-xs font-bold leading-tight">Carte Bancaire / PayPal</div>
+                  <div className="text-[0.68rem] opacity-75">Visa, Mastercard, Carte Bleue ou compte PayPal</div>
                 </div>
               </div>
               <span className="text-[0.65rem] font-bold text-emerald bg-emerald/10 px-2 py-0.5 rounded-md">International</span>
@@ -111,17 +91,17 @@ export default function PaymentModal({ pack, onClose }) {
             <button
               type="button"
               onClick={() => setProvider("fedapay")}
-              className={`p-2.5 sm:p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
+              className={`p-3 sm:p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                 provider === "fedapay"
                   ? "border-safran bg-safran/10 text-ink font-bold shadow-xs ring-2 ring-safran/30"
                   : "border-line bg-white hover:border-emerald/40 text-muted"
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span className="font-bold text-sm text-orange-500">📱</span>
+              <div className="flex items-center gap-3">
+                <Smartphone size={18} className={provider === "fedapay" ? "text-safran" : "text-emerald"} />
                 <div>
                   <div className="text-xs font-bold leading-tight">Fedapay (Mobile Money / Afrique)</div>
-                  <div className="text-[0.65rem] opacity-75">Orange Money, Wave, MTN, Moov, cartes locales</div>
+                  <div className="text-[0.68rem] opacity-75">Orange Money, Wave, MTN, Moov, cartes locales</div>
                 </div>
               </div>
               <span className="text-[0.65rem] font-bold text-safran bg-safran/10 px-2 py-0.5 rounded-md">Local</span>
