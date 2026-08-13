@@ -1,7 +1,9 @@
+# supabase/config.toml
+
 project_id = "farha"
 
 [functions.generate-lyrics]
-verify_jwt = false  # l'auth est vérifiée manuellement via getAuthedUser() pour un message d'erreur propre
+verify_jwt = false
 
 [functions.generate-music]
 verify_jwt = false
@@ -18,14 +20,17 @@ verify_jwt = false
 [functions.create-checkout]
 verify_jwt = false
 
+[functions.verify-payment]
+verify_jwt = false  # ← Ajouter cette ligne
+
 [functions.stripe-webhook]
-verify_jwt = false  # authentifié par la signature Stripe, pas par un JWT Supabase
+verify_jwt = false
 
 [functions.paypal-webhook]
-verify_jwt = false  # authentifié par la vérification de signature PayPal
+verify_jwt = false
 
 [functions.fedapay-webhook]
-verify_jwt = false  # authentifié par la signature HMAC Fedapay
+verify_jwt = false
 
 [functions.send-welcome-email]
-verify_jwt = false  # appelé par le Database Webhook interne Supabase
+verify_jwt = false

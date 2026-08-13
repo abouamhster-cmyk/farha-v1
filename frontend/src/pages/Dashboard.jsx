@@ -1,3 +1,5 @@
+// src/pages/Dashboard.jsx
+
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
@@ -6,7 +8,8 @@ import {
   Music, Disc3, CheckCircle2, Clock, Pen, FileText, Headphones,
   AlertTriangle, Loader2, PlusCircle, Sparkles, Mic2,
   Heart, Baby, Gift, PartyPopper, ChevronRight, ArrowRight,
-  Video, Store, Laugh, Search, Filter, RotateCcw, Crown, ShieldCheck, Zap
+  Video, Store, Laugh, Search, Filter, RotateCcw, Crown, ShieldCheck, Zap,
+  XCircle
 } from "lucide-react";
 
 const STATUS_CONFIG = {
@@ -47,6 +50,11 @@ export default function Dashboard() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
+  // États pour le paiement
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [paymentMessage, setPaymentMessage] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+
   async function loadSongs(pageNum = 0, append = false) {
     const from = pageNum * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
@@ -63,31 +71,87 @@ export default function Dashboard() {
 
   useEffect(() => { loadSongs(); }, [user?.id]);
 
+  // Gestion du retour de paiement
   useEffect(() => {
     const checkoutStatus = searchParams.get("checkout");
     const fedapayStatus = searchParams.get("status");
     const transactionId = searchParams.get("id");
+    const paypalToken = searchParams.get("token");
 
-    if (checkoutStatus === "success" || fedapayStatus === "approved") {
+    // Fonction pour nettoyer l'URL
+    const cleanUrl = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("checkout");
+      url.searchParams.delete("status");
+      url.searchParams.delete("id");
+      url.searchParams.delete("token");
+      url.searchParams.delete("PayerID");
+      window.history.replaceState({}, "", url.toString());
+    };
+
+    // Vérifier si on revient d'un paiement
+    const isReturningFromPayment = 
+      checkoutStatus === "success" || 
+      fedapayStatus === "approved" ||
+      paypalToken;
+
+    if (isReturningFromPayment && !isVerifying) {
+      setIsVerifying(true);
+      setPaymentStatus("checking");
+      setPaymentMessage("Vérification de votre paiement...");
+
       callFunction("verify-payment", {
         transactionId: transactionId || null,
-      }).then((res) => {
-        if (res?.success) {
-          refreshProfile();
-          loadSongs();
+      })
+        .then((res) => {
+          console.log("Réponse verify-payment:", res);
+          
+          if (res?.success) {
+            setPaymentStatus("success");
+            setPaymentMessage(`✅ Paiement confirmé ! +${res.creditsGranted || ""} crédits ajoutés.`);
+            refreshProfile();
+            loadSongs();
+            // Nettoyer l'URL après succès
+            setTimeout(cleanUrl, 4000);
+          } else if (res?.status === "pending") {
+            setPaymentStatus("pending");
+            setPaymentMessage("⏳ Paiement en attente de confirmation. Revenez dans quelques instants.");
+            // Ne pas nettoyer l'URL, l'utilisateur doit pouvoir revenir
+          } else if (res?.status === "canceled") {
+            setPaymentStatus("canceled");
+            setPaymentMessage("❌ Vous avez annulé le paiement. Aucun crédit n'a été débité.");
+            setTimeout(cleanUrl, 5000);
+          } else if (res?.status === "not_found") {
+            setPaymentStatus("failed");
+            setPaymentMessage("❌ Aucune commande en attente trouvée.");
+            setTimeout(cleanUrl, 4000);
+          } else {
+            setPaymentStatus("failed");
+            setPaymentMessage(`❌ ${res?.message || "Le paiement n'a pas abouti. Veuillez réessayer."}`);
+            setTimeout(cleanUrl, 5000);
+          }
+          setIsVerifying(false);
+        })
+        .catch((err) => {
+          console.error("Erreur vérification:", err);
+          setPaymentStatus("error");
+          setPaymentMessage("❌ Erreur lors de la vérification du paiement. Contactez le support.");
+          setTimeout(cleanUrl, 6000);
+          setIsVerifying(false);
+        });
+
+      // Timeout de sécurité
+      const timeout = setTimeout(() => {
+        if (isVerifying) {
+          setPaymentStatus("timeout");
+          setPaymentMessage("⏳ La vérification prend plus de temps que prévu. Rechargez la page dans quelques instants.");
+          setIsVerifying(false);
         }
-      }).catch(() => {
-        refreshProfile();
-      });
+      }, 20000);
 
-      const timer = setTimeout(() => {
-        refreshProfile();
-        loadSongs();
-      }, 1500);
-
-      return () => clearTimeout(timer);
+      return () => clearTimeout(timeout);
     }
-  }, [searchParams]);
+  }, [searchParams, refreshProfile, loadSongs, isVerifying]);
 
   // LOGIQUE DE FILTRAGE DYNAMIQUE
   const filteredSongs = songs.filter((song) => {
@@ -133,12 +197,64 @@ export default function Dashboard() {
   return (
     <div className="px-5 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-7xl mx-auto space-y-8">
 
-      {/* Message de succès d'achat si retour de paiement */}
-      {(searchParams.get("checkout") === "success" || searchParams.get("status") === "approved") && (
-        <div className="bg-emerald/10 text-emerald rounded-2xl p-4 sm:p-5 text-sm border border-emerald/20 flex items-center justify-between gap-3 animate-fade-in shadow-sm">
-          <div className="flex items-center gap-2.5 font-bold">
-            <CheckCircle2 size={20} className="text-emerald flex-shrink-0" />
-            <span>Paiement réussi ! Vos nouveaux crédits ont été ajoutés à votre solde.</span>
+      {/* Messages de statut de paiement */}
+      {paymentStatus === "checking" && (
+        <div className="bg-safran/10 border border-safran/30 rounded-2xl p-4 mb-6 flex items-center gap-3 animate-pulse">
+          <Loader2 size={20} className="text-safran animate-spin" />
+          <span className="text-sm font-medium text-ink">{paymentMessage}</span>
+        </div>
+      )}
+
+      {paymentStatus === "success" && (
+        <div className="bg-emerald/10 border border-emerald/20 rounded-2xl p-4 mb-6 flex items-center gap-3 animate-popIn">
+          <CheckCircle2 size={20} className="text-emerald flex-shrink-0" />
+          <span className="text-sm font-medium text-emerald">{paymentMessage}</span>
+        </div>
+      )}
+
+      {paymentStatus === "pending" && (
+        <div className="bg-safran/10 border border-safran/30 rounded-2xl p-4 mb-6 flex items-center gap-3">
+          <Clock size={20} className="text-safran flex-shrink-0" />
+          <span className="text-sm font-medium text-ink">{paymentMessage}</span>
+        </div>
+      )}
+
+      {paymentStatus === "canceled" && (
+        <div className="bg-henne/10 border border-henne/20 rounded-2xl p-4 mb-6 flex items-center justify-between gap-3 animate-slideDown">
+          <div className="flex items-center gap-3">
+            <XCircle size={20} className="text-henne flex-shrink-0" />
+            <span className="text-sm font-medium text-henne">{paymentMessage}</span>
+          </div>
+          <Link 
+            to="/tarifs" 
+            className="bg-henne text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-henne-light transition-colors flex-shrink-0"
+          >
+            Réessayer
+          </Link>
+        </div>
+      )}
+
+      {(paymentStatus === "failed" || paymentStatus === "error" || paymentStatus === "timeout") && (
+        <div className="bg-henne/10 border border-henne/20 rounded-2xl p-4 mb-6 flex items-center justify-between gap-3 animate-slideDown">
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={20} className="text-henne flex-shrink-0" />
+            <span className="text-sm font-medium text-henne">{paymentMessage}</span>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            {paymentStatus === "timeout" && (
+              <button 
+                onClick={() => window.location.reload()}
+                className="bg-emerald text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-light transition-colors"
+              >
+                Recharger
+              </button>
+            )}
+            <Link 
+              to="/tarifs" 
+              className="bg-henne text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-henne-light transition-colors"
+            >
+              Réessayer
+            </Link>
           </div>
         </div>
       )}
