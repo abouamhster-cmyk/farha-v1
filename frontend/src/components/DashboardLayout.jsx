@@ -14,11 +14,24 @@ const NAV_ITEMS = [
 const ADMIN_NAV = { to: "/admin", label: "Administration", Icon: ShieldAlert };
 
 export default function DashboardLayout({ children }) {
-  const { profile, signOut } = useAuth();
+  const { profile, loading, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const initials = (profile?.full_name ?? "U").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
+  if (loading || !profile) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0C0F0E]">
+        <div className="flex items-center gap-2 font-display font-bold text-lg text-white mb-6">
+          <span className="w-2 h-2 rounded-full bg-henne" />
+          Farha
+        </div>
+        <div className="w-8 h-8 border-3 border-safran/30 border-t-safran rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const initials = profile.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   function NavContent({ onNav }) {
     return (
@@ -70,8 +83,8 @@ export default function DashboardLayout({ children }) {
               {initials}
             </div>
             <div className="min-w-0">
-              <div className="text-[0.8rem] font-semibold text-white truncate">{profile?.full_name ?? "Utilisateur"}</div>
-              <div className="text-[0.7rem] text-white/35">{profile?.credits ?? 0} crédit{(profile?.credits ?? 0) !== 1 ? "s" : ""}</div>
+              <div className="text-[0.8rem] font-semibold text-white truncate">{profile.full_name}</div>
+              <div className="text-[0.7rem] text-white/35">{profile.credits} crédit{profile.credits !== 1 ? "s" : ""}</div>
             </div>
           </div>
           <button
