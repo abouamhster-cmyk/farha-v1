@@ -29,6 +29,7 @@ export async function callFunction(name, body, method = "POST") {
     method,
     headers: {
       "Content-Type": "application/json",
+      "apikey": supabaseAnonKey,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: method === "GET" ? undefined : JSON.stringify(body ?? {}),

@@ -29,3 +29,30 @@ verify_jwt = false  # authentifié par la signature HMAC Fedapay
 
 [functions.send-welcome-email]
 verify_jwt = false  # appelé par le Database Webhook interne Supabase
+
+[functions.share-meta]
+verify_jwt = false  # page publique pour les aperçus sociaux (og:tags)
+
+[functions.get-public-song]
+verify_jwt = false  # endpoint public pour la page de partage
+
+[functions.verify-payment]
+verify_jwt = false
+
+[functions.track-stat]
+verify_jwt = false
+
+[functions.translate-lyrics]
+verify_jwt = false
+
+[functions.regenerate-music]
+verify_jwt = false
+
+[functions.get-stream-url]
+verify_jwt = false
+
+[functions.create-share-link]
+verify_jwt = false
+
+[functions.get-share-data]
+verify_jwt = false

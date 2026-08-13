@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { callFunction } from "../lib/supabaseClient.js";
 import Header from "../components/Header.jsx";
-import { Play, Pause, Music, Loader2, Sparkles, ArrowRight } from "lucide-react";
+import { Play, Pause, Music, Loader2, Sparkles, ArrowRight, Heart, Gift, User } from "lucide-react";
 
 const STYLE_LABEL = {
   chaabi: "Chaâbi", rai: "Raï", rap: "Rap / Trap", pop: "Pop orientale",
@@ -11,16 +11,28 @@ const STYLE_LABEL = {
 
 export default function PublicSong() {
   const { songId } = useParams();
+  const [searchParams] = useSearchParams();
+  const shareId = searchParams.get("s");
+
   const [song, setSong] = useState(null);
+  const [share, setShare] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [revealed, setRevealed] = useState(!shareId);
 
   useEffect(() => {
     callFunction("get-public-song", { songId }, "GET")
       .then(({ song }) => setSong(song))
       .catch(() => setNotFound(true));
   }, [songId]);
+
+  useEffect(() => {
+    if (!shareId) return;
+    callFunction("get-share-data", { shareId }, "GET")
+      .then(({ share }) => setShare(share))
+      .catch(() => {});
+  }, [shareId]);
 
   const togglePlay = async () => {
     if (!audioRef.current) return;
@@ -31,9 +43,7 @@ export default function PublicSong() {
       try {
         await audioRef.current.play();
         setIsPlaying(true);
-      } catch {
-        // Clic utilisateur requis
-      }
+      } catch {}
     }
   };
 
@@ -64,13 +74,88 @@ export default function PublicSong() {
     );
   }
 
+  const isPersonalized = share?.shareType === "personalized" && share?.senderName;
   const styleLabel = STYLE_LABEL[song.musicStyle] ?? song.musicStyle;
+
+  if (isPersonalized && !revealed) {
+    return (
+      <div className="min-h-screen bg-cream flex flex-col">
+        <Header />
+        <div className="flex-1 max-w-lg mx-auto w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col items-center justify-center text-center">
+          <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-line w-full space-y-6 animate-slideUp">
+            {share.photoUrl ? (
+              <div className="w-24 h-24 rounded-full mx-auto overflow-hidden border-4 border-safran/30 shadow-lg">
+                <img src={share.photoUrl} alt="" className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-20 h-20 rounded-full mx-auto bg-safran/15 flex items-center justify-center border-4 border-safran/20">
+                <Gift size={32} className="text-safran" />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-safran flex items-center justify-center gap-1.5">
+                <Sparkles size={12} /> Une surprise pour vous
+              </p>
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink leading-snug">
+                {share.senderName} vous a dédié une chanson
+              </h1>
+              {share.message && (
+                <div className="bg-cream rounded-2xl p-4 border border-line mt-4">
+                  <p className="text-sm text-muted italic leading-relaxed">
+                    "{share.message}"
+                  </p>
+                  <p className="text-xs font-bold text-safran mt-2 flex items-center justify-end gap-1">
+                    <Heart size={11} /> {share.senderName}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setRevealed(true)}
+              className="w-full flex items-center justify-center gap-2.5 bg-henne hover:bg-henne-light text-white font-bold py-4 rounded-2xl shadow-lg transition-all cursor-pointer text-base active:scale-[0.98]"
+            >
+              <Play size={18} fill="currentColor" className="ml-0.5" />
+              Découvrir la chanson
+            </button>
+
+            <p className="text-[0.65rem] text-muted">
+              Créé avec <span className="font-bold text-safran">Farha</span> — Le Studio de Haute Création Musicale
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cream flex flex-col">
       <Header />
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-16">
+
+        {isPersonalized && (
+          <div className="bg-white rounded-2xl p-4 sm:p-5 mb-5 border border-safran/20 shadow-sm flex items-center gap-3 animate-slideUp">
+            {share.photoUrl ? (
+              <img src={share.photoUrl} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-safran/30 flex-shrink-0" />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-safran/15 flex items-center justify-center flex-shrink-0">
+                <User size={20} className="text-safran" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-ink">
+                {share.senderName} vous a dédié cette chanson
+              </p>
+              {share.message && (
+                <p className="text-xs text-muted italic mt-0.5 line-clamp-2">"{share.message}"</p>
+              )}
+            </div>
+            <Heart size={16} className="text-henne flex-shrink-0" />
+          </div>
+        )}
+
         <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/15 text-white bg-[#0C0F0E]">
           {song.coverUrl && (
             <div
@@ -105,7 +190,12 @@ export default function PublicSong() {
                   <Sparkles size={12} /> Farha
                 </div>
                 <h1 className="font-display text-xl sm:text-2xl font-bold text-white leading-snug">
-                  {song.recipientName ? `Chanson pour ${song.recipientName}` : "Chanson"}
+                  {isPersonalized
+                    ? `Chanson dédiée par ${share.senderName}`
+                    : song.recipientName
+                      ? `Chanson pour ${song.recipientName}`
+                      : "Chanson"
+                  }
                 </h1>
                 <p className="text-sm text-white/60">
                   {song.occasion || "Projet spécial"} · <span className="capitalize">{styleLabel}</span>
@@ -119,7 +209,7 @@ export default function PublicSong() {
                 className="w-full flex items-center justify-center gap-2.5 bg-safran hover:bg-safran-bright text-ink font-bold py-3.5 rounded-xl transition-all shadow-lg cursor-pointer"
               >
                 {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
-                {isPlaying ? "Lecture en cours…" : "Écouter l'extrait (30s)"}
+                {isPlaying ? "Lecture en cours..." : "Écouter l'extrait (30s)"}
               </button>
             )}
           </div>
@@ -139,7 +229,12 @@ export default function PublicSong() {
         )}
 
         <div className="text-center mt-8 space-y-3">
-          <p className="text-muted text-sm">Envie d'une création comme celle-ci pour vos propres projets ?</p>
+          <p className="text-muted text-sm">
+            {isPersonalized
+              ? "Envie de créer une chanson personnalisée pour vos proches ?"
+              : "Envie d'une création comme celle-ci pour vos propres projets ?"
+            }
+          </p>
           <Link
             to="/inscription"
             className="inline-flex items-center gap-2 bg-henne hover:bg-henne-light text-white font-bold px-7 py-3.5 rounded-xl shadow-md transition-all"

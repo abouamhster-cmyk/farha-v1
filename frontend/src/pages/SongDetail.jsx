@@ -3,12 +3,11 @@ import { useParams, Link } from "react-router-dom";
 import { supabase, callFunction } from "../lib/supabaseClient.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import ConfirmModal from "../components/ConfirmModal.jsx";
+import ShareModal from "../components/ShareModal.jsx";
 import {
   ChevronLeft, Loader2, Download, Unlock, Music, AlertTriangle,
   Globe, User, RefreshCw, Play, Pause, Sparkles, Lock, Share2, Check, ShieldCheck, Mic2, Headphones, CheckCircle2
 } from "lucide-react";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 export default function SongDetail() {
   const { songId } = useParams();
@@ -18,7 +17,7 @@ export default function SongDetail() {
   const [coverUrl, setCoverUrl] = useState(null);
   const [error, setError] = useState("");
   const [unlocking, setUnlocking] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [regeneratingMusic, setRegeneratingMusic] = useState(false);
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const [activeLyricsTab, setActiveLyricsTab] = useState("darija");
@@ -177,24 +176,8 @@ export default function SongDetail() {
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  async function handleShare() {
-    const shareUrl = `${SUPABASE_URL}/functions/v1/share-meta?songId=${songId}`;
-    const shareText = `Écoute la musique en Darija créée sur Farha`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Farha Studio", text: shareText, url: shareUrl });
-        return;
-      } catch { return; }
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setShareCopied(true);
-      setTimeout(() => setShareCopied(false), 2500);
-    } catch {
-      setError("Impossible de copier le lien.");
-    }
+  function handleShare() {
+    setShowShareModal(true);
   }
 
   async function handleUnlock() {
@@ -407,13 +390,15 @@ export default function SongDetail() {
                       <span className="capitalize">{song.music_style}</span> ({song.dialect})
                     </p>
 
-                    <button
-                      onClick={handleShare}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-white/80 hover:text-white border border-white/20 hover:border-safran bg-white/5 hover:bg-white/10 rounded-xl px-3 py-1.5 transition-colors cursor-pointer active:scale-[0.97]"
-                    >
-                      {shareCopied ? <Check size={13} className="text-emerald animate-popIn" /> : <Share2 size={13} />}
-                      {shareCopied ? "Lien copié !" : "Partager"}
-                    </button>
+                    {isUnlocked && (
+                      <button
+                        onClick={handleShare}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-white/80 hover:text-white border border-white/20 hover:border-safran bg-white/5 hover:bg-white/10 rounded-xl px-3 py-1.5 transition-colors cursor-pointer active:scale-[0.97]"
+                      >
+                        <Share2 size={13} />
+                        Partager
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -559,6 +544,13 @@ export default function SongDetail() {
         <p>Une nouvelle version musicale sera composée avec les mêmes paroles. Cela consommera <strong>1 crédit</strong> de votre solde.</p>
         <p className="mt-2">Crédits restants : <strong className="text-safran">{profile?.credits ?? 0}</strong></p>
       </ConfirmModal>
+
+      {showShareModal && song && (
+        <ShareModal
+          song={song}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
     </div>
   );
 }

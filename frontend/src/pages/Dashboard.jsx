@@ -39,6 +39,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
 
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
   const PAGE_SIZE = 20;
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -73,19 +75,18 @@ export default function Dashboard() {
         transactionId: transactionId || null,
       }).then((res) => {
         if (res?.success) {
+          setPaymentSuccess(true);
           refreshProfile();
           loadSongs();
+          setTimeout(() => setPaymentSuccess(false), 6000);
         }
-      }).catch(() => {
-        refreshProfile();
-      });
+      }).catch(() => {});
 
-      const timer = setTimeout(() => {
-        refreshProfile();
-        loadSongs();
-      }, 1500);
-
-      return () => clearTimeout(timer);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("checkout");
+      url.searchParams.delete("status");
+      url.searchParams.delete("id");
+      window.history.replaceState({}, "", url.pathname);
     }
   }, [searchParams]);
 
@@ -133,8 +134,7 @@ export default function Dashboard() {
   return (
     <div className="px-5 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-7xl mx-auto space-y-8">
 
-      {/* Message de succès d'achat si retour de paiement */}
-      {(searchParams.get("checkout") === "success" || searchParams.get("status") === "approved") && (
+      {paymentSuccess && (
         <div className="bg-emerald/10 text-emerald rounded-2xl p-4 sm:p-5 text-sm border border-emerald/20 flex items-center justify-between gap-3 animate-fade-in shadow-sm">
           <div className="flex items-center gap-2.5 font-bold">
             <CheckCircle2 size={20} className="text-emerald flex-shrink-0" />
