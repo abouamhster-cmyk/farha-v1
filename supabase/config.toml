@@ -54,18 +54,6 @@ verify_jwt = false
 [functions.get-share-data]
 verify_jwt = false
 
-[functions.admin-stats]
-verify_jwt = false
-
-[functions.cleanup-drafts]
-verify_jwt = false
-
-[functions.delete-account]
-verify_jwt = false
-
-[functions.send-purchase-email]
-verify_jwt = false
-
 [functions.generate-video]
 verify_jwt = false
 
