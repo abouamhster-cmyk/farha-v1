@@ -608,53 +608,52 @@ export default function CreateSong() {
             </div>
           ) : (
             <>
-              {regeneratingLyrics && (
-                <div className="relative">
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 rounded-2xl flex flex-col items-center justify-center gap-3 min-h-[200px]">
-                    <Loader2 size={28} className="text-emerald animate-spin" />
-                    <p className="text-sm font-semibold text-ink">Régénération des paroles en cours...</p>
-                  </div>
+              {regeneratingLyrics ? (
+                <div className="flex flex-col items-center justify-center gap-3 min-h-[280px] sm:min-h-[320px]">
+                  <Loader2 size={28} className="text-emerald animate-spin" />
+                  <p className="text-sm font-semibold text-ink">Régénération des paroles en cours...</p>
                 </div>
-              )}
-
-              {/* Onglets Darija / FR */}
-              <div className="flex border-b border-line items-center">
-                <button
-                  onClick={() => setActiveTab("darija")}
-                  className={`px-4 sm:px-5 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
-                    activeTab === "darija" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
-                  }`}
-                >
-                  Version Principale (Arabe)
-                </button>
-                <button
-                  onClick={() => setActiveTab("french")}
-                  className={`px-4 sm:px-5 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
-                    activeTab === "french" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
-                  }`}
-                >
-                  Traduction Française
-                </button>
-                {translating && (
-                  <span className="ml-auto text-xs text-muted flex items-center gap-1.5 pr-2">
-                    <Loader2 size={12} className="animate-spin text-emerald" /> Traduction auto...
-                  </span>
-                )}
-              </div>
-
-              {activeTab === "darija" ? (
-                <textarea
-                  className="input-field min-h-[280px] sm:min-h-[320px] font-arabic text-right text-base sm:text-xl leading-loose"
-                  dir="rtl"
-                  value={lyrics}
-                  onChange={(e) => handleLyricsChange("darija", e.target.value)}
-                />
               ) : (
-                <textarea
-                  className="input-field min-h-[280px] sm:min-h-[320px] text-sm sm:text-base leading-relaxed"
-                  value={lyricsFr}
-                  onChange={(e) => handleLyricsChange("french", e.target.value)}
-                />
+                <>
+                  <div className="flex border-b border-line items-center">
+                    <button
+                      onClick={() => setActiveTab("darija")}
+                      className={`px-4 sm:px-5 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+                        activeTab === "darija" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
+                      }`}
+                    >
+                      Version Principale (Arabe)
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("french")}
+                      className={`px-4 sm:px-5 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+                        activeTab === "french" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
+                      }`}
+                    >
+                      Traduction Française
+                    </button>
+                    {translating && (
+                      <span className="ml-auto text-xs text-muted flex items-center gap-1.5 pr-2">
+                        <Loader2 size={12} className="animate-spin text-emerald" /> Traduction auto...
+                      </span>
+                    )}
+                  </div>
+
+                  {activeTab === "darija" ? (
+                    <textarea
+                      className="input-field min-h-[280px] sm:min-h-[320px] font-arabic text-right text-base sm:text-xl leading-loose"
+                      dir="rtl"
+                      value={lyrics}
+                      onChange={(e) => handleLyricsChange("darija", e.target.value)}
+                    />
+                  ) : (
+                    <textarea
+                      className="input-field min-h-[280px] sm:min-h-[320px] text-sm sm:text-base leading-relaxed"
+                      value={lyricsFr}
+                      onChange={(e) => handleLyricsChange("french", e.target.value)}
+                    />
+                  )}
+                </>
               )}
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-3">

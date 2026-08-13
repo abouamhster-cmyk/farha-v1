@@ -50,6 +50,8 @@ function sanitizeForLyria(text: string): string {
     .trim();
 }
 
+
+
 function formatTimestamp(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
@@ -358,7 +360,7 @@ Deno.serve(async (req: Request) => {
 
     if (!result) {
       const message = geminiBlocked
-        ? "Ce contenu a été refusé par notre studio créatif (sujet sensible ou inapproprié). Modifiez votre description ou vos paroles et réessayer."
+        ? "Le service de composition musicale (Google Lyria) a refusé ce texte. Cela arrive parfois avec des expressions en arabe ou darija mal interprétées par le filtre automatique. Essayez de reformuler certaines expressions ou simplifier le texte."
         : "La composition musicale a échoué. Veuillez réessayer dans quelques instants.";
       throw new Error(message);
     }
