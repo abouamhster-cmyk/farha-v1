@@ -4,8 +4,9 @@ import { supabase } from "../lib/supabaseClient.js";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(undefined); // undefined = pas encore chargé
+  const [session, setSession] = useState(undefined);
   const [profile, setProfile] = useState(null);
+  const [profileReady, setProfileReady] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -18,23 +19,30 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (session === undefined) return;
     if (!session?.user) {
       setProfile(null);
+      setProfileReady(true);
       return;
     }
+    setProfileReady(false);
     supabase
       .from("profiles")
       .select("*")
       .eq("id", session.user.id)
       .single()
-      .then(({ data }) => setProfile(data));
-  }, [session?.user?.id]);
+      .then(({ data }) => {
+        setProfile(data);
+        setProfileReady(true);
+      })
+      .catch(() => setProfileReady(true));
+  }, [session?.user?.id, session]);
 
   const value = {
     session,
     user: session?.user ?? null,
     profile,
-    loading: session === undefined,
+    loading: session === undefined || (!!session?.user && !profileReady),
     refreshProfile: async () => {
       if (!session?.user) return;
       const { data } = await supabase

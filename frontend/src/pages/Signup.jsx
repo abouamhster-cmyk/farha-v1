@@ -44,11 +44,24 @@ export default function Signup() {
     }
   }
 
+  const [googleLoading, setGoogleLoading] = useState(false);
+
   async function handleGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/tableau-de-bord` },
-    });
+    setGoogleLoading(true);
+    setError("");
+    try {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/tableau-de-bord` },
+      });
+      if (oauthError) {
+        setError("Connexion Google impossible. Réessayez.");
+        setGoogleLoading(false);
+      }
+    } catch {
+      setError("Connexion Google impossible. Vérifiez votre connexion.");
+      setGoogleLoading(false);
+    }
   }
 
   return (
@@ -83,10 +96,15 @@ export default function Signup() {
               <button
                 onClick={handleGoogle}
                 type="button"
-                className="w-full py-3 px-4 border border-white/20 rounded-xl bg-white/10 hover:bg-white/15 font-semibold text-xs sm:text-sm flex items-center justify-center gap-3 transition-all hover:border-safran/50"
+                disabled={googleLoading}
+                className="w-full py-3 px-4 border border-white/20 rounded-xl bg-white/10 hover:bg-white/15 font-semibold text-xs sm:text-sm flex items-center justify-center gap-3 transition-all hover:border-safran/50 disabled:opacity-60"
               >
-                <GoogleIcon />
-                S'inscrire avec Google
+                {googleLoading ? (
+                  <div className="w-[18px] h-[18px] border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <GoogleIcon />
+                )}
+                {googleLoading ? "Redirection…" : "S'inscrire avec Google"}
               </button>
 
               <div className="flex items-center text-center text-white/40 text-xs font-semibold my-5">
