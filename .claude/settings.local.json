@@ -6,7 +6,14 @@
       "Bash(npx vite *)",
       "Bash(ls \"C:\\\\Users\\\\jbill\\\\OneDrive\\\\Bureau\\\\farha v1\\\\\")",
       "mcp__visualize__read_me",
-      "mcp__visualize__show_widget"
+      "mcp__visualize__show_widget",
+      "Bash(npx supabase *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git checkout *)",
+      "Bash(gh pr create --title 'Pages admin/credits/legal + emails Brevo + loading SongDetail + polish prod' --body ' *)",
+      "Bash(echo \"exit:$?\")"
     ]
   }
 }
