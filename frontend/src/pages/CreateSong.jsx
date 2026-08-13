@@ -605,8 +605,12 @@ export default function CreateSong() {
               className="input-field min-h-[120px] sm:min-h-[140px] text-sm sm:text-base leading-relaxed"
               value={form.brief}
               onChange={(e) => setForm({ ...form, brief: e.target.value })}
+              maxLength={1500}
               placeholder="Racontez l'histoire, le message, la blague ou les détails sur le produit à mettre en valeur dans la chanson..."
             />
+            {form.brief.length > 1200 && (
+              <span className="text-xs text-muted mt-1 block text-right">{form.brief.length}/1500</span>
+            )}
           </div>
 
           {/* Bouton submit */}

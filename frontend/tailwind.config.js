@@ -31,6 +31,7 @@ export default {
         micPulse: { "0%, 100%": { transform: "scale(1)" }, "50%": { transform: "scale(1.15)" } },
         successCheck: { "0%": { strokeDashoffset: "50" }, "100%": { strokeDashoffset: "0" } },
         confettiBurst: { "0%": { opacity: "1", transform: "translateY(0) scale(1)" }, "100%": { opacity: "0", transform: "translateY(-60px) scale(0.5)" } },
+        loading: { "0%": { width: "0%", marginLeft: "0%" }, "50%": { width: "60%", marginLeft: "20%" }, "100%": { width: "0%", marginLeft: "100%" } },
       },
       animation: {
         fadeIn: "fadeIn 0.2s ease-out",

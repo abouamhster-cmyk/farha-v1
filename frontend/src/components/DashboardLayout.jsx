@@ -2,17 +2,19 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import {
-  Music, LayoutDashboard, PlusCircle, CreditCard, LogOut, Menu, X
+  Music, LayoutDashboard, PlusCircle, CreditCard, LogOut, Menu, X, Shield
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { to: "/tableau-de-bord", label: "Tableau de bord", Icon: LayoutDashboard },
   { to: "/creer",           label: "Nouvelle chanson", Icon: PlusCircle },
-  { to: "/tarifs",          label: "Crédits",          Icon: CreditCard },
+  { to: "/credits",         label: "Crédits",          Icon: CreditCard },
 ];
 
+const ADMIN_EMAILS = ["abouamhster@gmail.com"];
+
 export default function DashboardLayout({ children }) {
-  const { profile, signOut } = useAuth();
+  const { profile, user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -45,6 +47,18 @@ export default function DashboardLayout({ children }) {
               </Link>
             );
           })}
+          {ADMIN_EMAILS.includes(user?.email ?? "") && (
+            <Link
+              to="/admin"
+              onClick={onNav}
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[0.85rem] font-medium transition-colors mt-3 ${
+                location.pathname === "/admin" ? "bg-emerald text-white" : "text-white/45 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Shield size={17} />
+              Admin
+            </Link>
+          )}
         </nav>
 
         <div className="px-4 py-4 border-t border-white/10">

@@ -53,15 +53,7 @@ export default function Signup() {
 
   return (
     <div className="relative min-h-[calc(100vh-70px)] flex flex-col items-center justify-center px-4 sm:px-6 py-4 overflow-hidden bg-[#0C0F0E] text-white">
-      {/* IMAGE DE FOND STUDIO */}
-      <div
-        className="absolute inset-0 bg-cover bg-center scale-105"
-        style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1800&q=80')",
-        }}
-      />
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-[3px]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0A3832] via-[#0C0F0E] to-[#1a0d08]" />
 
       <div className="relative z-10 w-full max-w-[440px] text-center">
 

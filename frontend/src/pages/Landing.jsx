@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import { supabase, callFunction } from "../lib/supabaseClient.js";
 import { PLAN_CONTENT, PLAN_ORDER, formatEuros } from "../lib/planContent.js";
 
-// --- IMAGES DU DIAPORAMA DE FOND HERO ---
-const HERO_SLIDES = [
-  "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1800&q=80",
-  "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1800&q=80",
-  "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=80",
-  "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1800&q=80",
+// --- COULEURS DU FOND HERO ANIMÉ ---
+const HERO_GRADIENTS = [
+  "radial-gradient(ellipse at 30% 20%, #0A3832 0%, #0C0F0E 70%)",
+  "radial-gradient(ellipse at 70% 80%, #1a0d08 0%, #0C0F0E 70%)",
+  "radial-gradient(ellipse at 50% 40%, #0A3832 0%, #0C0F0E 70%)",
+  "radial-gradient(ellipse at 20% 70%, #1a0d08 0%, #0C0F0E 70%)",
 ];
 
 // --- MOTS DYNAMIQUES DU HERO (CENTRÉS SUR LA MUSIQUE) ---
@@ -238,24 +238,22 @@ function HeroBackground() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+      setCurrentSlide((prev) => (prev + 1) % HERO_GRADIENTS.length);
     }, 5000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {HERO_SLIDES.map((slide, index) => (
+      {HERO_GRADIENTS.map((grad, index) => (
         <div
-          key={slide}
-          className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out scale-105 ${
+          key={index}
+          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
             index === currentSlide ? "opacity-100" : "opacity-0"
           }`}
-          style={{ backgroundImage: `url('${slide}')` }}
+          style={{ background: grad }}
         />
       ))}
-
-      <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/80 to-[#0C0F0E] backdrop-blur-[3px]" />
 
       <div
         className="absolute inset-0 opacity-[0.04]"
@@ -724,14 +722,7 @@ function FAQ() {
 function FinalCTA() {
   return (
     <section className="relative bg-[#0C0F0E] text-white text-center py-16 sm:py-28 overflow-hidden">
-      <div
-        className="absolute inset-0 bg-cover bg-center scale-105"
-        style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1800&q=80')",
-        }}
-      />
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0A3832] via-[#0C0F0E] to-[#1a0d08]" />
 
       <div className="relative z-10 max-w-[700px] mx-auto px-6 sm:px-8">
         <p className="font-arabic text-safran text-xl sm:text-3xl mb-3 sm:mb-4 drop-shadow">صوب أول أغنية ديالك فـ 3 دقايق</p>
@@ -764,7 +755,10 @@ export default function Landing() {
       <footer className="bg-[#0C0F0E] text-white/30 border-t border-white/5 py-6 sm:py-8">
         <div className="max-w-[1120px] mx-auto px-6 sm:px-8 flex justify-between items-center flex-wrap gap-4 text-xs sm:text-sm">
           <div className="flex items-center gap-2 font-display font-bold text-white/60"><span className="w-2 h-2 rounded-full bg-henne" /> Farha</div>
-          <div>© 2026 Farha</div>
+          <div className="flex items-center gap-4">
+            <Link to="/mentions-legales" className="hover:text-white/60 transition-colors">Mentions légales</Link>
+            <span>© 2026 Farha</span>
+          </div>
         </div>
       </footer>
     </div>

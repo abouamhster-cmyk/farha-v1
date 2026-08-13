@@ -114,6 +114,15 @@ Deno.serve(async (req) => {
     }
 
     await admin.rpc("increment_profile_credits", { p_user_id: order.user_id, p_amount: order.songs_granted });
+
+    fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-purchase-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({ user_id: order.user_id, order_id: order.id }),
+    }).catch((e: any) => console.warn("Email achat (non-bloquant):", e.message));
   }
 
   return jsonResponse({ received: true });

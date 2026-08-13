@@ -30,6 +30,10 @@ export default function SongDetail() {
   const [duration, setDuration] = useState(0);
   const [audioLoading, setAudioLoading] = useState(false);
 
+  const [audioReady, setAudioReady] = useState(false);
+  const [imageReady, setImageReady] = useState(false);
+  const [revealPage, setRevealPage] = useState(false);
+
   const loadSong = useCallback(async () => {
     try {
       const { data, error: dbErr } = await supabase.from("songs").select("*").eq("id", songId).single();
@@ -138,6 +142,33 @@ export default function SongDetail() {
       audioRef.current.load();
     }
   }, [audioUrl]);
+
+  useEffect(() => {
+    if (!audioUrl) { setAudioReady(false); return; }
+    const a = new Audio(audioUrl);
+    a.addEventListener("canplaythrough", () => setAudioReady(true), { once: true });
+    a.load();
+    return () => { a.src = ""; };
+  }, [audioUrl]);
+
+  useEffect(() => {
+    if (!coverUrl) { setImageReady(true); return; }
+    setImageReady(false);
+    const img = new Image();
+    img.onload = () => setImageReady(true);
+    img.onerror = () => setImageReady(true);
+    img.src = coverUrl;
+  }, [coverUrl]);
+
+  const isGeneratingStatus = song?.status === "lyrics_generating" || song?.status === "music_generating";
+  const assetsReady = isGeneratingStatus || (audioReady && imageReady);
+
+  useEffect(() => {
+    if (song && assetsReady && !revealPage) {
+      const t = setTimeout(() => setRevealPage(true), 300);
+      return () => clearTimeout(t);
+    }
+  }, [song, assetsReady, revealPage]);
 
   const togglePlay = async () => {
     if (!audioRef.current) return;
@@ -268,19 +299,31 @@ export default function SongDetail() {
     }
   }
 
-  if (!song) {
+  if (!song || !revealPage) {
     return (
-      <div className="px-4 py-20 flex items-center justify-center">
-        <Loader2 size={32} className="text-safran animate-spin" />
+      <div className="px-4 py-20 flex flex-col items-center justify-center min-h-[60vh] gap-5">
+        <div className="relative">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald to-[#0C0F0E] flex items-center justify-center shadow-xl">
+            <Music size={32} className="text-safran" />
+          </div>
+          <Loader2 size={22} className="text-safran animate-spin absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow" />
+        </div>
+        <div className="text-center space-y-1.5">
+          <p className="font-display font-bold text-base sm:text-lg">Préparation de votre morceau...</p>
+          <p className="text-xs text-muted">Image et musique en cours de chargement</p>
+        </div>
+        <div className="w-48 h-1.5 bg-line rounded-full overflow-hidden">
+          <div className="h-full bg-safran rounded-full animate-[loading_1.5s_ease-in-out_infinite]" />
+        </div>
       </div>
     );
   }
 
   const isGenerating = song.status === "lyrics_generating" || song.status === "music_generating";
-  const aiCoverImage = coverUrl || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80";
+  const aiCoverImage = coverUrl || null;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-7xl mx-auto">
+    <div className="px-4 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-7xl mx-auto animate-fadeIn">
       <Link to="/tableau-de-bord" className="text-xs sm:text-sm text-muted hover:text-emerald mb-5 sm:mb-6 inline-flex items-center gap-1.5 font-semibold transition-colors">
         <ChevronLeft size={16} /> Retour au tableau de bord
       </Link>
@@ -367,10 +410,12 @@ export default function SongDetail() {
           {/* LECTEUR AUDIO */}
           {(song.status === "preview_ready" || isUnlocked) && !audioLoading && !regeneratingMusic && (
             <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden p-5 sm:p-8 shadow-xl border border-white/15 text-white bg-[#0C0F0E] animate-slideUp">
-              <div
-                className="absolute inset-0 bg-cover bg-center blur-2xl scale-125 opacity-30 pointer-events-none"
-                style={{ backgroundImage: `url('${aiCoverImage}')` }}
-              />
+              {aiCoverImage && (
+                <div
+                  className="absolute inset-0 bg-cover bg-center blur-2xl scale-125 opacity-30 pointer-events-none"
+                  style={{ backgroundImage: `url('${aiCoverImage}')` }}
+                />
+              )}
               <div className="absolute inset-0 bg-[#0C0F0E]/85 backdrop-blur-xl pointer-events-none" />
 
               <div className="relative z-10 space-y-5 sm:space-y-6">
@@ -387,7 +432,13 @@ export default function SongDetail() {
                 {/* Pochette + Infos */}
                 <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
                   <div className="relative w-28 h-28 sm:w-36 sm:h-36 lg:w-40 lg:h-40 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 border border-white/20">
-                    <img src={aiCoverImage} alt="Pochette d'album" className="w-full h-full object-cover" />
+                    {aiCoverImage ? (
+                      <img src={aiCoverImage} alt="Pochette d'album" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald to-[#0C0F0E] flex items-center justify-center">
+                        <Music size={36} className="text-safran/60" />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-2">
                       <span className="text-white text-[0.6rem] sm:text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1">
                         {isUnlocked

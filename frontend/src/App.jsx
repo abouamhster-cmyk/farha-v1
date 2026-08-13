@@ -11,6 +11,9 @@ import Dashboard from "./pages/Dashboard.jsx";
 import CreateSong from "./pages/CreateSong.jsx";
 import SongDetail from "./pages/SongDetail.jsx";
 import PricingPage from "./pages/PricingPage.jsx";
+import Credits from "./pages/Credits.jsx";
+import Admin from "./pages/Admin.jsx";
+import Legal from "./pages/Legal.jsx";
 import PublicSong from "./pages/PublicSong.jsx";
 
 // Layout public (avec le header classique)
@@ -54,11 +57,16 @@ export default function App() {
           ProtectedRoute. Le header est géré à l'intérieur de PublicSong. */}
       <Route path="/ecouter/:songId" element={<PublicSong />} />
 
+      {/* Page légale (accessible à tous, connecté ou non) */}
+      <Route path="/mentions-legales" element={<Legal />} />
+
       {/* Pages connectées (sidebar du Dashboard) */}
       <Route path="/tableau-de-bord" element={<AppLayout><Dashboard /></AppLayout>} />
       <Route path="/creer" element={<AppLayout><CreateSong /></AppLayout>} />
       <Route path="/chanson/:songId" element={<AppLayout><SongDetail /></AppLayout>} />
       <Route path="/tarifs" element={<AppLayout><PricingPage /></AppLayout>} />
+      <Route path="/credits" element={<AppLayout><Credits /></AppLayout>} />
+      <Route path="/admin" element={<AppLayout><Admin /></AppLayout>} />
 
       {/* Redirection par défaut pour les URL introuvables */}
       <Route path="*" element={<Navigate to="/" replace />} />

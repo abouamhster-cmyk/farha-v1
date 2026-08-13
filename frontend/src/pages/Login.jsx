@@ -16,11 +16,16 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      setError(
-        error.message === "Invalid login credentials"
-          ? "E-mail ou mot de passe incorrect."
-          : error.message
-      );
+      const msg = error.message;
+      if (msg === "Invalid login credentials") {
+        setError("E-mail ou mot de passe incorrect.");
+      } else if (msg.includes("Email not confirmed")) {
+        setError("Votre e-mail n'est pas encore confirmé. Vérifiez votre boîte de réception.");
+      } else if (msg.includes("Too many requests") || msg.includes("rate limit")) {
+        setError("Trop de tentatives. Réessayez dans quelques minutes.");
+      } else {
+        setError(msg);
+      }
       return;
     }
     navigate("/tableau-de-bord");
@@ -35,16 +40,7 @@ export default function Login() {
 
   return (
     <div className="relative min-h-[calc(100vh-70px)] flex flex-col items-center justify-center px-4 sm:px-6 py-10 overflow-hidden bg-[#0C0F0E] text-white">
-      {/* IMAGE DE FOND STUDIO / MUSIQUE */}
-      <div
-        className="absolute inset-0 bg-cover bg-center scale-105"
-        style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1800&q=80')",
-        }}
-      />
-      {/* OVERLAY SOMBRE AVEC FLOU D'AMBIANCE */}
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-[3px]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0A3832] via-[#0C0F0E] to-[#1a0d08]" />
 
       {/* MOTIF DISCRET (ZELLIGE) */}
       <div

@@ -62,7 +62,15 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Erreur lors de l'ajout des crédits" }, 500);
     }
 
-    console.log(`Paiement validé pour Order ${orderId}, crédits ajoutés à ${order.user_id}`);
+    fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-purchase-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({ user_id: order.user_id, order_id: order.id }),
+    }).catch((e: any) => console.warn("Email achat (non-bloquant):", e.message));
+
     return jsonResponse({ status: "success" }, 200);
 
   } else if (transaction.status === "declined" || transaction.status === "canceled") {
