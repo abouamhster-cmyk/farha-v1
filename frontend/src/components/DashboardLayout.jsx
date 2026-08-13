@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import {
-  Music, LayoutDashboard, PlusCircle, CreditCard, LogOut, Menu, X
+  Music, LayoutDashboard, PlusCircle, CreditCard, LogOut, Menu, X, ShieldAlert
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -10,6 +10,8 @@ const NAV_ITEMS = [
   { to: "/creer",           label: "Nouvelle chanson", Icon: PlusCircle },
   { to: "/tarifs",          label: "Crédits",          Icon: CreditCard },
 ];
+
+const ADMIN_NAV = { to: "/admin", label: "Administration", Icon: ShieldAlert };
 
 export default function DashboardLayout({ children }) {
   const { profile, signOut } = useAuth();
@@ -45,6 +47,21 @@ export default function DashboardLayout({ children }) {
               </Link>
             );
           })}
+          {profile?.is_admin && (
+            <>
+              <div className="border-t border-white/10 my-3" />
+              <Link
+                to={ADMIN_NAV.to}
+                onClick={onNav}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[0.85rem] font-medium transition-colors ${
+                  location.pathname === ADMIN_NAV.to ? "bg-henne text-white" : "text-henne-light hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <ADMIN_NAV.Icon size={17} />
+                {ADMIN_NAV.label}
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="px-4 py-4 border-t border-white/10">

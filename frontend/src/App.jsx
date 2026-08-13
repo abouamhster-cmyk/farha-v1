@@ -12,6 +12,8 @@ import CreateSong from "./pages/CreateSong.jsx";
 import SongDetail from "./pages/SongDetail.jsx";
 import PricingPage from "./pages/PricingPage.jsx";
 import PublicSong from "./pages/PublicSong.jsx";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AdminRoute from "./components/AdminRoute.jsx";
 
 // Layout public (avec le header classique)
 function PublicLayout({ children }) {
@@ -59,6 +61,7 @@ export default function App() {
       <Route path="/creer" element={<AppLayout><CreateSong /></AppLayout>} />
       <Route path="/chanson/:songId" element={<AppLayout><SongDetail /></AppLayout>} />
       <Route path="/tarifs" element={<AppLayout><PricingPage /></AppLayout>} />
+      <Route path="/admin" element={<AdminRoute><DashboardLayout><AdminDashboard /></DashboardLayout></AdminRoute>} />
 
       {/* Redirection par défaut pour les URL introuvables */}
       <Route path="*" element={<Navigate to="/" replace />} />
