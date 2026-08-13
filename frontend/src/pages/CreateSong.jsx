@@ -48,6 +48,17 @@ const CATEGORIES = [
   { id: "Mariage / Fête", label: "Mariage & Fêtes", Icon: PartyPopper, desc: "Célébrations" },
 ];
 
+const TRANSLATION_LANGS = [
+  { value: "fr", label: "Français" },
+  { value: "en", label: "English" },
+  { value: "es", label: "Español" },
+  { value: "tr", label: "Türkçe" },
+  { value: "de", label: "Deutsch" },
+  { value: "pt", label: "Português" },
+  { value: "it", label: "Italiano" },
+  { value: "nl", label: "Nederlands" },
+];
+
 const EXPLICIT_PROMPT_TEMPLATES = [
   {
     label: "Vlog Voyage Marrakech",
@@ -191,6 +202,8 @@ export default function CreateSong() {
 
   const [lyrics, setLyrics] = useState("");
   const [lyricsFr, setLyricsFr] = useState("");
+  const [translatedLyrics, setTranslatedLyrics] = useState("");
+  const [translationLang, setTranslationLang] = useState("fr");
   const [lyricsVersion, setLyricsVersion] = useState(0);
   const [activeTab, setActiveTab] = useState("darija");
 
@@ -211,7 +224,7 @@ export default function CreateSong() {
       if (draft.form) setForm(draft.form);
       if (draft.songId) setSongId(draft.songId);
       if (draft.lyrics) setLyrics(draft.lyrics);
-      if (draft.lyricsFr) setLyricsFr(draft.lyricsFr);
+      if (draft.lyricsFr) { setLyricsFr(draft.lyricsFr); setTranslatedLyrics(draft.lyricsFr); }
       if (draft.lyricsVersion) setLyricsVersion(draft.lyricsVersion);
       if (draft.step) setStep(draft.step);
       if (draft.activeTab) setActiveTab(draft.activeTab);
@@ -237,17 +250,19 @@ export default function CreateSong() {
     setTimeout(() => setTemplateAppliedNotice(""), 3500);
   };
 
-  const translateLyrics = useCallback(async (source, text, dialect) => {
+  const translateLyrics = useCallback(async (source, text, dialect, targetLang) => {
     if (translateAbort.current) translateAbort.current.abort();
     const controller = new AbortController();
     translateAbort.current = controller;
 
+    const langLabel = TRANSLATION_LANGS.find(l => l.value === targetLang)?.label || targetLang;
+    const dialectLabel = DIALECTS.find(d => d.value === dialect)?.label || "darija";
+
     setTranslating(true);
     try {
-      const dialectLabel = DIALECTS.find(d => d.value === dialect)?.label || "darija";
       const direction = source === "darija"
-        ? `Traduis ces paroles de ${dialectLabel} vers le français. Garde le même nombre de lignes.`
-        : `Traduis ces paroles du français vers la ${dialectLabel} (alphabet arabe). Garde le même nombre de lignes.`;
+        ? `Traduis ces paroles de ${dialectLabel} vers le ${langLabel}. Garde le même nombre de lignes.`
+        : `Traduis ces paroles du ${langLabel} vers la ${dialectLabel} (alphabet arabe). Garde le même nombre de lignes.`;
 
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
@@ -266,8 +281,12 @@ export default function CreateSong() {
       if (!resp.ok) throw new Error("Traduction échouée");
       const json = await resp.json();
       if (json.translation) {
-        if (source === "darija") setLyricsFr(json.translation);
-        else setLyrics(json.translation);
+        if (source === "darija") {
+          setTranslatedLyrics(json.translation);
+          if (targetLang === "fr") setLyricsFr(json.translation);
+        } else {
+          setLyrics(json.translation);
+        }
       }
     } catch (err) {
       if (err.name !== "AbortError") console.warn("Translation error:", err);
@@ -277,14 +296,27 @@ export default function CreateSong() {
   }, []);
 
   function handleLyricsChange(source, value) {
-    if (source === "darija") setLyrics(value);
-    else setLyricsFr(value);
+    if (source === "darija") {
+      setLyrics(value);
+    } else {
+      setTranslatedLyrics(value);
+      if (translationLang === "fr") setLyricsFr(value);
+    }
 
     if (translateTimer.current) clearTimeout(translateTimer.current);
     if (value.trim().length > 10) {
       translateTimer.current = setTimeout(() => {
-        translateLyrics(source, value, form.dialect);
+        translateLyrics(source, value, form.dialect, translationLang);
       }, TRANSLATE_DEBOUNCE_MS);
+    }
+  }
+
+  function handleTranslationLangChange(newLang) {
+    setTranslationLang(newLang);
+    setTranslatedLyrics("");
+    if (lyrics.trim().length > 10) {
+      if (translateTimer.current) clearTimeout(translateTimer.current);
+      translateLyrics("darija", lyrics, form.dialect, newLang);
     }
   }
 
@@ -360,6 +392,8 @@ export default function CreateSong() {
       const { song } = await callFunction("generate-lyrics", { songId: id ?? songId });
       setLyrics(song.lyrics ?? "");
       setLyricsFr(song.lyrics_fr ?? "");
+      if (translationLang === "fr") setTranslatedLyrics(song.lyrics_fr ?? "");
+      else if (song.lyrics) translateLyrics("darija", song.lyrics, form.dialect, translationLang);
       setLyricsVersion(song.lyrics_version);
     } catch (err) {
       setError(err.message);
@@ -622,19 +656,30 @@ export default function CreateSong() {
                         activeTab === "darija" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
                       }`}
                     >
-                      Version Principale (Arabe)
+                      Paroles (Arabe)
                     </button>
-                    <button
-                      onClick={() => setActiveTab("french")}
-                      className={`px-4 sm:px-5 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
-                        activeTab === "french" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
-                      }`}
-                    >
-                      Traduction Française
-                    </button>
+                    <div className={`flex items-center border-b-2 transition-colors ${activeTab === "translation" ? "border-emerald" : "border-transparent"}`}>
+                      <button
+                        onClick={() => setActiveTab("translation")}
+                        className={`pl-4 sm:pl-5 pr-1 py-3 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
+                          activeTab === "translation" ? "text-emerald font-bold" : "text-muted"
+                        }`}
+                      >
+                        Traduction
+                      </button>
+                      <select
+                        value={translationLang}
+                        onChange={(e) => { handleTranslationLangChange(e.target.value); setActiveTab("translation"); }}
+                        className="py-2 pr-1 sm:pr-2 text-xs sm:text-sm font-semibold bg-transparent border-none outline-none cursor-pointer text-emerald"
+                      >
+                        {TRANSLATION_LANGS.map(l => (
+                          <option key={l.value} value={l.value}>{l.label}</option>
+                        ))}
+                      </select>
+                    </div>
                     {translating && (
                       <span className="ml-auto text-xs text-muted flex items-center gap-1.5 pr-2">
-                        <Loader2 size={12} className="animate-spin text-emerald" /> Traduction auto...
+                        <Loader2 size={12} className="animate-spin text-emerald" /> Traduction...
                       </span>
                     )}
                   </div>
@@ -649,8 +694,9 @@ export default function CreateSong() {
                   ) : (
                     <textarea
                       className="input-field min-h-[280px] sm:min-h-[320px] text-sm sm:text-base leading-relaxed"
-                      value={lyricsFr}
-                      onChange={(e) => handleLyricsChange("french", e.target.value)}
+                      placeholder={translating ? "Traduction en cours..." : "La traduction apparaîtra ici..."}
+                      value={translatedLyrics}
+                      onChange={(e) => handleLyricsChange("translation", e.target.value)}
                     />
                   )}
                 </>
