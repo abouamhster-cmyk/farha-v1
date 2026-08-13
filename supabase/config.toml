@@ -6,9 +6,6 @@ verify_jwt = false  # l'auth est vérifiée manuellement via getAuthedUser() pou
 [functions.generate-music]
 verify_jwt = false
 
-[functions.music-status]
-verify_jwt = false
-
 [functions.unlock-song]
 verify_jwt = false
 
@@ -55,4 +52,22 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.get-share-data]
+verify_jwt = false
+
+[functions.admin-stats]
+verify_jwt = false
+
+[functions.cleanup-drafts]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
+
+[functions.send-purchase-email]
+verify_jwt = false
+
+[functions.generate-video]
+verify_jwt = false
+
+[functions.check-video-status]
 verify_jwt = false
