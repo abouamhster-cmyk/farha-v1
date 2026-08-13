@@ -43,6 +43,20 @@ export default function SongDetail() {
 
   useEffect(() => { loadSong(); refreshProfile(); }, [loadSong]);
 
+  useEffect(() => {
+    if (!song) return;
+    const isGenerating = song.status === "music_generating" || song.status === "lyrics_generating";
+    if (!isGenerating) return;
+    const interval = setInterval(async () => {
+      const updated = await loadSong();
+      if (updated && updated.status !== "music_generating" && updated.status !== "lyrics_generating") {
+        clearInterval(interval);
+        refreshProfile();
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [song?.status, loadSong, refreshProfile]);
+
   const songStatus = song?.status;
   const isUnlocked = songStatus === "completed" || songStatus === "purchased";
 

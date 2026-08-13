@@ -50,7 +50,58 @@ function sanitizeForLyria(text: string): string {
     .trim();
 }
 
+const OCCASION_LABELS: Record<string, string> = {
+  anniversaire: "birthday celebration",
+  mariage: "wedding celebration",
+  diplome: "graduation celebration",
+  naissance: "birth celebration, welcoming a new baby",
+  fiancailles: "engagement celebration",
+  retraite: "retirement tribute",
+  promotion: "career promotion celebration",
+  amour: "love song",
+  amitie: "friendship tribute",
+  fete: "festive party",
+};
 
+function buildFallbackPrompt(
+  stylePrompt: string,
+  voicePrompt: string,
+  occasion: string,
+  recipientName: string,
+  brief: string,
+  lyricsFr: string,
+  maxDurationSeconds: number,
+): string {
+  const d = maxDurationSeconds;
+  const maxFmt = formatTimestamp(d);
+  const minFmt = formatTimestamp(Math.round(d * 0.85));
+
+  const theme = OCCASION_LABELS[occasion] || "festive celebration";
+  const nameInfo = recipientName ? `The song is dedicated to ${recipientName}.` : "";
+  const briefInfo = brief ? `Context from the user: ${sanitizeForLyria(brief)}` : "";
+
+  let lyricsContext = "";
+  if (lyricsFr) {
+    const cleaned = sanitizeForLyria(lyricsFr).slice(0, 1500);
+    lyricsContext = `\nThe user originally wrote lyrics with these themes and ideas (use them as inspiration, rephrase freely):\n${cleaned}\n`;
+  }
+
+  return `${stylePrompt} ${voicePrompt}
+
+Compose a complete original song for a ${theme}. ${nameInfo} ${briefInfo}
+${lyricsContext}
+Write and sing your own lyrics inspired by the themes above. Sing in Moroccan Darija (Arabic dialect). Be creative, joyful, and authentic. Keep the same spirit and key ideas from the original but use your own words.
+
+Structure:
+[0:00 - ${formatTimestamp(Math.round(d * 0.08))}] Intro — Instrumental opening, building atmosphere
+[${formatTimestamp(Math.round(d * 0.08))} - ${formatTimestamp(Math.round(d * 0.30))}] Verse 1 — Moderate energy, storytelling
+[${formatTimestamp(Math.round(d * 0.30))} - ${formatTimestamp(Math.round(d * 0.50))}] Chorus — Full energy, catchy hook
+[${formatTimestamp(Math.round(d * 0.50))} - ${formatTimestamp(Math.round(d * 0.68))}] Verse 2 — Variations, building emotion
+[${formatTimestamp(Math.round(d * 0.68))} - ${formatTimestamp(Math.round(d * 0.85))}] Final Chorus — Peak energy
+[${formatTimestamp(Math.round(d * 0.85))} - ${maxFmt}] Outro — Fade to silence
+
+CRITICAL: Duration between ${minFmt} and ${maxFmt}. End with a natural fade-out.`;
+}
 
 function formatTimestamp(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -348,7 +399,15 @@ Deno.serve(async (req: Request) => {
     if (geminiKey) {
       const geminiResult = await callGeminiLyria(geminiKey, prompt);
       if (geminiResult === "blocked") {
-        geminiBlocked = true;
+        console.warn("Lyria blocked original lyrics — retrying with form context only...");
+        const fallbackPrompt = buildFallbackPrompt(stylePrompt, voicePrompt, song.occasion, song.recipient_name, song.brief, song.lyrics_fr, maxDuration);
+        const retryResult = await callGeminiLyria(geminiKey, fallbackPrompt);
+        if (retryResult === "blocked") {
+          geminiBlocked = true;
+        } else {
+          result = retryResult;
+          console.warn("Fallback succeeded — Lyria composed its own lyrics from form context.");
+        }
       } else {
         result = geminiResult;
       }

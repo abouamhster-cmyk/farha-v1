@@ -22,22 +22,35 @@ Deno.serve(async (req: Request) => {
   // 3. Vérifier si la transaction est validée
   if (transaction.status === "approved" || transaction.status === "completed") {
     
-    // Récupérer la commande pour vérifier si elle n'a pas déjà été traitée
     const { data: order, error: orderErr } = await admin
       .from("orders")
-      .select("*")
+      .select("id, status, user_id, songs_granted")
       .eq("id", orderId)
+      .eq("provider", "fedapay")
       .single();
 
-    if (orderErr || !order || order.status === "paid") {
-      return jsonResponse({ message: "Commande déjà traitée ou introuvable" }, 200);
+    if (orderErr || !order) {
+      console.error("Commande introuvable pour Fedapay", orderId);
+      return jsonResponse({ received: true });
     }
 
-    // 4. TRANSACTION RÉUSSIE : Créditer l'utilisateur
-    await admin
+    if (order.status !== "pending") {
+      return jsonResponse({ received: true, duplicate: true });
+    }
+
+    const { error: updateErr } = await admin
       .from("orders")
       .update({ status: "paid", paid_at: new Date().toISOString(), provider_event_id: String(transaction.id) })
-      .eq("id", orderId);
+      .eq("id", orderId)
+      .eq("status", "pending");
+
+    if (updateErr) {
+      if (updateErr.code !== "23505") {
+        console.error("Erreur mise à jour commande Fedapay", updateErr);
+        return jsonResponse({ error: updateErr.message }, 500);
+      }
+      return jsonResponse({ received: true, duplicate: true });
+    }
 
     const { error: creditErr } = await admin.rpc("increment_profile_credits", {
       p_user_id: order.user_id,

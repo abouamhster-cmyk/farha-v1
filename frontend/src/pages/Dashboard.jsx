@@ -39,15 +39,25 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
 
-  // ÉTATS DE FILTRES ET RECHERCHE
+  const PAGE_SIZE = 20;
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
-  async function loadSongs() {
-    const { data } = await supabase.from("songs").select("*").order("created_at", { ascending: false });
-    setSongs(data ?? []);
+  async function loadSongs(pageNum = 0, append = false) {
+    const from = pageNum * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    const { data } = await supabase
+      .from("songs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .range(from, to);
+    const results = data ?? [];
+    setHasMore(results.length === PAGE_SIZE);
+    setSongs(prev => append ? [...prev, ...results] : results);
     setLoading(false);
   }
 
@@ -336,51 +346,64 @@ export default function Dashboard() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredSongs.map((song) => {
-              const status = STATUS_CONFIG[song.status] ?? STATUS_CONFIG.draft;
-              const OccIcon = getOccasionIcon(song.occasion);
-              const isAnimated = song.status === "lyrics_generating" || song.status === "music_generating";
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredSongs.map((song) => {
+                const status = STATUS_CONFIG[song.status] ?? STATUS_CONFIG.draft;
+                const OccIcon = getOccasionIcon(song.occasion);
+                const isAnimated = song.status === "lyrics_generating" || song.status === "music_generating";
 
-              return (
-                <Link
-                  to={`/chanson/${song.id}`}
-                  key={song.id}
-                  className={`group bg-white rounded-2xl border border-line/80 hover:border-safran/50 hover:shadow-lg transition-all overflow-hidden border-l-4 ${status.accent} p-5 sm:p-6 flex flex-col justify-between`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center flex-shrink-0 text-emerald">
-                        <OccIcon size={20} />
+                return (
+                  <Link
+                    to={`/chanson/${song.id}`}
+                    key={song.id}
+                    className={`group bg-white rounded-2xl border border-line/80 hover:border-safran/50 hover:shadow-lg transition-all overflow-hidden border-l-4 ${status.accent} p-5 sm:p-6 flex flex-col justify-between`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center flex-shrink-0 text-emerald">
+                          <OccIcon size={20} />
+                        </div>
+                        <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full ${status.color}`}>
+                          <status.Icon size={12} className={isAnimated ? "animate-spin" : ""} />
+                          {status.label}
+                        </span>
                       </div>
-                      <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full ${status.color}`}>
-                        <status.Icon size={12} className={isAnimated ? "animate-spin" : ""} />
-                        {status.label}
-                      </span>
+
+                      <h3 className="font-display font-bold text-lg mb-1 group-hover:text-emerald transition-colors line-clamp-1">
+                        {song.occasion || "Ma chanson"}
+                      </h3>
+
+                      <p className="text-muted text-xs sm:text-sm mb-4">
+                        {song.recipient_name ? `Sujet : ${song.recipient_name} · ` : ""}
+                        <span className="capitalize">{song.dialect}</span> · <span className="capitalize">{song.music_style}</span>
+                      </p>
                     </div>
 
-                    <h3 className="font-display font-bold text-lg mb-1 group-hover:text-emerald transition-colors line-clamp-1">
-                      {song.occasion || "Ma chanson"}
-                    </h3>
+                    <div className="flex items-center justify-between pt-4 border-t border-line/60 text-xs text-muted">
+                      <span>
+                        {new Date(song.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                      <span className="font-bold text-emerald flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        Ouvrir <ChevronRight size={14} />
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
 
-                    <p className="text-muted text-xs sm:text-sm mb-4">
-                      {song.recipient_name ? `Sujet : ${song.recipient_name} · ` : ""}
-                      <span className="capitalize">{song.dialect}</span> · <span className="capitalize">{song.music_style}</span>
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-line/60 text-xs text-muted">
-                    <span>
-                      {new Date(song.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
-                    </span>
-                    <span className="font-bold text-emerald flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                      Ouvrir <ChevronRight size={14} />
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+            {hasMore && filteredSongs.length >= PAGE_SIZE && (
+              <div className="text-center pt-6">
+                <button
+                  onClick={() => { const next = page + 1; setPage(next); loadSongs(next, true); }}
+                  className="inline-flex items-center gap-2 border border-line text-muted hover:text-emerald hover:border-emerald font-semibold px-6 py-3 rounded-xl transition-colors cursor-pointer text-sm"
+                >
+                  Voir plus
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
