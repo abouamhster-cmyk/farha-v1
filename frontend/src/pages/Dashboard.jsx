@@ -40,7 +40,7 @@ export default function Dashboard() {
   const { user, profile, refreshProfile } = useAuth();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const PAGE_SIZE = 20;
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,7 +51,7 @@ export default function Dashboard() {
   const [hasMore, setHasMore] = useState(true);
 
   // États pour le paiement
-  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState(null); // null | "checking" | "success" | "pending" | "canceled" | "failed" | "error" | "timeout"
   const [paymentMessage, setPaymentMessage] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -71,37 +71,42 @@ export default function Dashboard() {
 
   useEffect(() => { loadSongs(); }, [user?.id]);
 
-  // Gestion du retour de paiement
+  // ✅ Gestion du retour de paiement - VERSION CORRIGÉE
   useEffect(() => {
     const checkoutStatus = searchParams.get("checkout");
     const fedapayStatus = searchParams.get("status");
     const transactionId = searchParams.get("id");
     const paypalToken = searchParams.get("token");
+    const paymentId = searchParams.get("paymentId");
+    const PayerID = searchParams.get("PayerID");
 
-    // Fonction pour nettoyer l'URL
+    // ✅ Fonction pour nettoyer l'URL
     const cleanUrl = () => {
       const url = new URL(window.location.href);
       url.searchParams.delete("checkout");
       url.searchParams.delete("status");
       url.searchParams.delete("id");
       url.searchParams.delete("token");
+      url.searchParams.delete("paymentId");
       url.searchParams.delete("PayerID");
       window.history.replaceState({}, "", url.toString());
     };
 
-    // Vérifier si on revient d'un paiement
+    // ✅ Vérifier si on revient d'un paiement
     const isReturningFromPayment = 
       checkoutStatus === "success" || 
       fedapayStatus === "approved" ||
-      paypalToken;
+      paypalToken ||
+      paymentId;
 
+    // ✅ Si on revient d'un paiement ET qu'on n'est pas déjà en train de vérifier
     if (isReturningFromPayment && !isVerifying) {
       setIsVerifying(true);
       setPaymentStatus("checking");
-      setPaymentMessage("Vérification de votre paiement...");
+      setPaymentMessage("⏳ Vérification de votre paiement en cours...");
 
       callFunction("verify-payment", {
-        transactionId: transactionId || null,
+        transactionId: transactionId || paymentId || null,
       })
         .then((res) => {
           console.log("Réponse verify-payment:", res);
@@ -111,24 +116,24 @@ export default function Dashboard() {
             setPaymentMessage(`✅ Paiement confirmé ! +${res.creditsGranted || ""} crédits ajoutés.`);
             refreshProfile();
             loadSongs();
-            // Nettoyer l'URL après succès
-            setTimeout(cleanUrl, 4000);
+            // ✅ Nettoyer l'URL après succès
+            setTimeout(cleanUrl, 5000);
           } else if (res?.status === "pending") {
             setPaymentStatus("pending");
             setPaymentMessage("⏳ Paiement en attente de confirmation. Revenez dans quelques instants.");
-            // Ne pas nettoyer l'URL, l'utilisateur doit pouvoir revenir
+            // ✅ Ne pas nettoyer l'URL, l'utilisateur doit pouvoir revenir
           } else if (res?.status === "canceled") {
             setPaymentStatus("canceled");
             setPaymentMessage("❌ Vous avez annulé le paiement. Aucun crédit n'a été débité.");
-            setTimeout(cleanUrl, 5000);
+            setTimeout(cleanUrl, 6000);
           } else if (res?.status === "not_found") {
             setPaymentStatus("failed");
             setPaymentMessage("❌ Aucune commande en attente trouvée.");
-            setTimeout(cleanUrl, 4000);
+            setTimeout(cleanUrl, 5000);
           } else {
             setPaymentStatus("failed");
             setPaymentMessage(`❌ ${res?.message || "Le paiement n'a pas abouti. Veuillez réessayer."}`);
-            setTimeout(cleanUrl, 5000);
+            setTimeout(cleanUrl, 6000);
           }
           setIsVerifying(false);
         })
@@ -136,11 +141,11 @@ export default function Dashboard() {
           console.error("Erreur vérification:", err);
           setPaymentStatus("error");
           setPaymentMessage("❌ Erreur lors de la vérification du paiement. Contactez le support.");
-          setTimeout(cleanUrl, 6000);
+          setTimeout(cleanUrl, 7000);
           setIsVerifying(false);
         });
 
-      // Timeout de sécurité
+      // ✅ Timeout de sécurité
       const timeout = setTimeout(() => {
         if (isVerifying) {
           setPaymentStatus("timeout");
@@ -194,10 +199,25 @@ export default function Dashboard() {
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
   const completedCount = songs.filter(s => s.status === "completed" || s.status === "preview_ready").length;
 
+  // ✅ Fonction pour réessayer le paiement
+  const handleRetry = () => {
+    setPaymentStatus(null);
+    setPaymentMessage("");
+    // Nettoyer l'URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete("checkout");
+    url.searchParams.delete("status");
+    url.searchParams.delete("id");
+    url.searchParams.delete("token");
+    url.searchParams.delete("paymentId");
+    url.searchParams.delete("PayerID");
+    window.history.replaceState({}, "", url.toString());
+  };
+
   return (
     <div className="px-5 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-7xl mx-auto space-y-8">
 
-      {/* Messages de statut de paiement */}
+      {/* ✅ Messages de statut de paiement - UNIQUEMENT basés sur l'état, PAS sur l'URL */}
       {paymentStatus === "checking" && (
         <div className="bg-safran/10 border border-safran/30 rounded-2xl p-4 mb-6 flex items-center gap-3 animate-pulse">
           <Loader2 size={20} className="text-safran animate-spin" />
@@ -228,6 +248,7 @@ export default function Dashboard() {
           <Link 
             to="/tarifs" 
             className="bg-henne text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-henne-light transition-colors flex-shrink-0"
+            onClick={handleRetry}
           >
             Réessayer
           </Link>
@@ -252,6 +273,7 @@ export default function Dashboard() {
             <Link 
               to="/tarifs" 
               className="bg-henne text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-henne-light transition-colors"
+              onClick={handleRetry}
             >
               Réessayer
             </Link>
@@ -259,7 +281,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* HEADER BANNIÈRE STUDIO SOMBRE & LUMINEUSE */}
+      {/* HEADER BANNIÈRE STUDIO */}
       <div className="relative rounded-3xl p-6 sm:p-10 shadow-xl overflow-hidden border border-safran/30 text-white bg-[#0C0F0E]">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-safran/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald/20 rounded-full blur-3xl pointer-events-none" />
@@ -290,7 +312,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* COMPTEURS CARTES AVEC LUEURS */}
+      {/* COMPTEURS CARTES */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div className="bg-white border border-safran/30 rounded-2xl p-5 sm:p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
           <div className="w-13 h-13 rounded-2xl bg-safran/15 text-safran flex items-center justify-center flex-shrink-0 shadow-inner">
@@ -326,7 +348,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* PANNEAU DE RECHERCHE, SÉLECTEURS & FILTRES VECTORIELS */}
+      {/* PANNEAU DE RECHERCHE */}
       {songs.length > 0 && (
         <div className="bg-white border border-line rounded-3xl p-4 sm:p-6 shadow-sm space-y-4 overflow-hidden">
           <div className="flex flex-col md:flex-row items-center gap-3">
@@ -335,7 +357,7 @@ export default function Dashboard() {
               <input
                 type="text"
                 className="input-field pl-10 text-xs sm:text-sm"
-                placeholder="Rechercher par prénom, marque, sujet, style ou dialecte..."
+                placeholder="Chercher par prénom, marque, sujet, style ou dialecte..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -370,7 +392,6 @@ export default function Dashboard() {
             </select>
           </div>
 
-          {/* Chips de catégories avec icônes vectorielles Lucide */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[
               { id: "all", label: "Toutes les catégories", Icon: Filter },
