@@ -331,7 +331,7 @@ export default function CreateSong() {
     e.preventDefault();
     setError("");
     if (form.brief.trim().length < 8) {
-      setError("Donnez-nous au moins quelques mots d'explication pour votre chanson.");
+      setError("Décrivez un peu ce que vous voulez comme chanson.");
       return;
     }
     setLoading(true);
@@ -355,7 +355,7 @@ export default function CreateSong() {
     e.preventDefault();
     setError("");
     if (form.brief.trim().length < 8) {
-      setError("Donnez-nous au moins quelques mots d'explication pour votre chanson.");
+      setError("Décrivez un peu ce que vous voulez comme chanson.");
       return;
     }
     setLoading(true);
@@ -612,8 +612,8 @@ export default function CreateSong() {
           {/* Bouton submit */}
           <button type="submit" disabled={loading || !online} className="w-full flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold py-3.5 sm:py-4 rounded-2xl shadow-lg hover:shadow-henne/40 transition-all text-sm sm:text-base lg:text-lg disabled:opacity-50 cursor-pointer border border-white/10 active:scale-[0.98]">
             {loading
-              ? <><Loader2 size={20} className="animate-spin" /> {hasExistingLyrics ? "Régénération des paroles..." : "Rédaction des paroles..."}</>
-              : <>{hasExistingLyrics ? "Régénérer les paroles" : "Générer les paroles gratuites"} <ArrowRight size={18} /></>}
+              ? <><Loader2 size={20} className="animate-spin" /> {hasExistingLyrics ? "Régénération..." : "Écriture des paroles..."}</>
+              : <>{hasExistingLyrics ? "Régénérer les paroles" : "Écrire les paroles"} <ArrowRight size={18} /></>}
           </button>
         </form>
       )}
@@ -624,8 +624,8 @@ export default function CreateSong() {
 
           <div className="flex items-center justify-between border-b border-line pb-4 flex-wrap gap-2">
             <div>
-              <h1 className="font-display text-xl sm:text-2xl font-bold">Vos paroles sur-mesure</h1>
-              <p className="text-muted text-xs sm:text-sm">Relisez et modifiez librement. C'est 100% gratuit.</p>
+              <h1 className="font-display text-xl sm:text-2xl font-bold">Vos paroles</h1>
+              <p className="text-muted text-xs sm:text-sm">Relisez, modifiez, c'est gratuit.</p>
             </div>
             <button onClick={handleGoBackAndResubmit} className="text-xs font-semibold text-emerald hover:underline flex items-center gap-1 bg-cream px-3 py-2 rounded-xl border border-line cursor-pointer active:scale-[0.97]">
               <ChevronLeft size={14} /> Modifier l'idée
@@ -634,11 +634,11 @@ export default function CreateSong() {
 
           {composing ? (
             <div className="py-10 sm:py-12">
-              <ProgressCircle estimatedSeconds={35} active={composing} size={100} label="Le studio compose et chante votre morceau..." />
+              <ProgressCircle estimatedSeconds={35} active={composing} size={100} label="Composition en cours..." />
             </div>
           ) : loading && !lyrics ? (
             <div className="py-10 sm:py-12">
-              <ProgressCircle estimatedSeconds={12} active={loading} size={90} label="Rédaction des paroles en arabe authentique..." />
+              <ProgressCircle estimatedSeconds={12} active={loading} size={90} label="Écriture des paroles..." />
             </div>
           ) : (
             <>

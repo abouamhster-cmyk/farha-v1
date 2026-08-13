@@ -91,10 +91,10 @@ const AUDIO_CARDS = [
 
 const FAQ_ITEMS = [
   { q: "Les clips vidéos 9:16 sont-ils disponibles ?", a: "Notre équipe travaille activement sur l'intégration des clips vidéos animés verticaux (9:16). Cette fonctionnalité sera disponible très prochainement pour tous nos membres !" },
-  { q: "Quelle est la différence entre les modèles de génération selon le plan ?", a: "Plus la formule choisie est élevée, plus le studio débloque des modèles de composition musicale avancés (Google Lyria 3 Pro) et d'écriture poétique de niveau supérieur (Gemini 3.5 Pro), avec une vitesse de traitement prioritaire instantanée." },
+  { q: "Quelle est la différence entre les formules ?", a: "Les formules supérieures donnent accès à une meilleure qualité sonore, des chansons plus longues et un traitement plus rapide." },
   { q: "Est-ce que je peux utiliser la musique pour mes vidéos TikTok / Instagram / YouTube ?", a: "Oui ! Une fois débloquée, la musique vous appartient. Vous pouvez l'utiliser librement pour vos Reels, TikTok, vlogs, ou publicités commerciales sans problème de droits d'auteur." },
-  { q: "Est-ce que le dialecte sonne vraiment naturel ?", a: "Absolument. Les paroles sont rédigées en écriture arabe authentique, avec les vraies expressions et l'accent du dialecte choisi (Marocain, Algérien, Tunisien, Égyptien, Levantin, Khaleeji, etc.)." },
-  { q: "Puis-je modifier les paroles avant de composer la musique ?", a: "Oui, c'est gratuit et illimité ! Vous relisez le texte, modifiez les phrases si besoin, puis lancez la composition musicale quand vous êtes prêt." },
+  { q: "Est-ce que le dialecte sonne naturel ?", a: "Oui. Les paroles sont écrites dans le dialecte que vous choisissez (Marocain, Algérien, Tunisien, Égyptien, etc.) avec les vraies expressions du quotidien." },
+  { q: "Je peux modifier les paroles avant la musique ?", a: "Oui, autant de fois que vous voulez et c'est gratuit. Vous ne payez que quand vous lancez la musique." },
   { q: "Quels moyens de paiement acceptez-vous ?", a: "PayPal (cartes bancaires) et Fedapay (Mobile Money Afrique/Maghreb, Orange Money, Wave, virement)." },
 ];
 
@@ -292,7 +292,7 @@ function Hero({ stats }) {
       <div className="relative z-10 max-w-[1080px] mx-auto px-6 sm:px-8 flex flex-col items-center justify-center text-center pt-8 sm:pt-20 pb-16 sm:pb-24">
         
         <div className="inline-flex items-center gap-2 bg-white/10 border border-safran/50 backdrop-blur-md text-safran-bright px-4 py-2 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider mb-6 shadow-md">
-           {"👑 LE STUDIO N°1 DE COMPOSITION MUSICALE DU MONDE ARABE & MAGHRÉBIN"}
+           {"👑 CHANSONS EN DARIJA, RAÏ, CHAÂBI & PLUS"}
         </div>
 
         <p className="font-arabic text-safran text-2xl sm:text-3xl mb-4 opacity-95 drop-shadow">
@@ -300,7 +300,7 @@ function Hero({ stats }) {
         </p>
 
         <h1 className="font-display font-extrabold leading-[1.15] mb-6 text-[1.8rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-[4.2rem] tracking-tight drop-shadow-lg">
-          {"Créez votre musique en Darija pour "}
+          {"Votre chanson en Darija pour "}
           <span
             className={`inline-block text-transparent bg-clip-text bg-gradient-to-r from-safran-bright via-safran to-safran-bright drop-shadow-[0_2px_14px_rgba(232,149,40,0.4)] transition-opacity duration-300 ${
               fading ? "opacity-0" : "opacity-100"
@@ -311,7 +311,7 @@ function Hero({ stats }) {
         </h1>
 
         <p className="text-base sm:text-xl text-white/85 max-w-[660px] leading-relaxed mb-8 font-normal">
-          {"Pionniers de la création musicale sur-mesure. Transformez vos moments les plus précieux, vos vidéos et vos projets en chansons inoubliables en 3 minutes "}
+          {"Décrivez ce que vous voulez, on écrit les paroles et on compose la musique. Prêt en quelques minutes "}
           <span className="text-safran-bright font-semibold">{"(Clips vidéos 9:16 très prochainement !)"}</span>.
         </p>
 
@@ -320,7 +320,7 @@ function Hero({ stats }) {
             to="/inscription"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-henne hover:bg-henne-light text-white font-bold text-base sm:text-lg px-9 py-4 rounded-xl shadow-[0_14px_35px_rgba(184,58,40,0.45)] transition-all hover:-translate-y-0.5"
           >
-            {"Lancer ma première création →"}
+            {"Créer une chanson →"}
           </Link>
           <a
             href="#exemples"
@@ -358,7 +358,7 @@ function Hero({ stats }) {
 }
 
 function Marquee() {
-  const items = ["RÉSEAUX SOCIAUX & REELS", "STUDIO DE HAUTE CRÉATION", "PUBS & E-COMMERCE", "ANNIVERSAIRES", "HUMOUR & MEMES", "MARIAGES", "VLOGS & STORIES"];
+  const items = ["TIKTOK & REELS", "PUBS & MARQUES", "ANNIVERSAIRES", "HUMOUR & MEMES", "MARIAGES", "VLOGS & STORIES", "RAÏ & CHAÂBI"];
   const track = [...items, ...items];
   return (
     <div className="bg-emerald text-safran overflow-hidden py-3 sm:py-3.5 border-y border-white/10 whitespace-nowrap font-display text-xs sm:text-[0.9rem] font-semibold tracking-[0.1em]">
@@ -468,9 +468,9 @@ function AudioSection() {
     <section id="exemples" className="py-12 sm:py-20 bg-[#0F1310]">
       <div className="max-w-[1120px] mx-auto px-6 sm:px-8">
         <div className="text-center mb-8 sm:mb-12">
-          <div className="text-henne text-xs font-bold uppercase tracking-widest mb-2 sm:mb-3">Réalisations du Studio</div>
-          <h2 className="font-display font-bold text-white text-2xl sm:text-3xl lg:text-4xl mb-2 sm:mb-3">Inspiration & Usages Sur-Mesure</h2>
-          <p className="text-white/50 text-xs sm:text-sm max-w-[520px] mx-auto">Compositions personnalisées pour vidéos TikTok/Reels, publicités de marques ou célébrations d'exception.</p>
+          <div className="text-henne text-xs font-bold uppercase tracking-widest mb-2 sm:mb-3">Exemples</div>
+          <h2 className="font-display font-bold text-white text-2xl sm:text-3xl lg:text-4xl mb-2 sm:mb-3">Écoutez ce que ça donne</h2>
+          <p className="text-white/50 text-xs sm:text-sm max-w-[520px] mx-auto">Des chansons créées par nos utilisateurs pour TikTok, pubs, mariages et plus.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {AUDIO_CARDS.map((card) => (
@@ -624,7 +624,7 @@ function Pricing() {
         <div className="text-center mb-8 sm:mb-10">
           <div className="text-henne text-xs sm:text-sm font-bold uppercase tracking-widest mb-2">Tarifs</div>
           <h2 className="font-display font-bold text-2xl sm:text-3xl lg:text-4xl">Simple, transparent, sans abonnement</h2>
-          <p className="text-muted text-xs sm:text-base mt-1.5">Rédaction des paroles gratuite. Vous ne débloquez que le projet final qui vous plaît.</p>
+          <p className="text-muted text-xs sm:text-base mt-1.5">Les paroles sont gratuites. Vous payez uniquement pour la musique.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-stretch">
@@ -736,13 +736,13 @@ function FinalCTA() {
       <div className="relative z-10 max-w-[700px] mx-auto px-6 sm:px-8">
         <p className="font-arabic text-safran text-xl sm:text-3xl mb-3 sm:mb-4 drop-shadow">صوب أول أغنية ديالك فـ 3 دقايق</p>
         <h2 className="font-display font-bold text-2xl sm:text-4xl lg:text-5xl text-white mb-3 sm:mb-4 leading-tight drop-shadow-md">
-          Donnez une voix authentique à vos idées.
+          Votre chanson, votre histoire.
         </h2>
         <p className="text-white/70 text-xs sm:text-base mb-6 sm:mb-8 max-w-[580px] mx-auto drop-shadow-sm">
-          Création offerte. Testez vos paroles et écoutez votre premier morceau composé par le studio sans engagement.
+          Essayez gratuitement. Écrivez vos paroles, écoutez le résultat, payez seulement si ça vous plaît.
         </p>
         <Link to="/inscription" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-safran hover:bg-safran-bright text-ink font-bold text-base px-8 py-3.5 sm:px-10 sm:py-4 rounded-xl shadow-lg transition-all hover:-translate-y-0.5">
-          Rejoindre le Studio & Créer maintenant →
+          Commencer gratuitement →
         </Link>
       </div>
     </section>
@@ -764,7 +764,7 @@ export default function Landing() {
       <footer className="bg-[#0C0F0E] text-white/30 border-t border-white/5 py-6 sm:py-8">
         <div className="max-w-[1120px] mx-auto px-6 sm:px-8 flex justify-between items-center flex-wrap gap-4 text-xs sm:text-sm">
           <div className="flex items-center gap-2 font-display font-bold text-white/60"><span className="w-2 h-2 rounded-full bg-henne" /> Farha</div>
-          <div>© 2026 Farha — Le Studio de Haute Création Musicale.</div>
+          <div>© 2026 Farha</div>
         </div>
       </footer>
     </div>

@@ -33,7 +33,7 @@ export default function NotFound() {
         Page introuvable
       </h1>
       <p style={{ color: '#5C5449', marginBottom: '32px', maxWidth: '400px', fontSize: '1rem' }}>
-        Cette page n'existe pas. Mais votre chanson personnalisée, elle, peut exister en 3 minutes.
+        Cette page n'existe pas.
       </p>
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
         <button

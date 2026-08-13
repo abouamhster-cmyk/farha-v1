@@ -102,10 +102,10 @@ export default function PublicSong() {
 
               <div className="flex-1 w-full text-center sm:text-left space-y-2">
                 <div className="text-[0.68rem] font-bold uppercase tracking-widest text-safran flex items-center justify-center sm:justify-start gap-1.5">
-                  <Sparkles size={12} /> Réalisation du Studio Farha
+                  <Sparkles size={12} /> Farha
                 </div>
                 <h1 className="font-display text-xl sm:text-2xl font-bold text-white leading-snug">
-                  {song.recipientName ? `Une création pour ${song.recipientName}` : "Une création sur-mesure"}
+                  {song.recipientName ? `Chanson pour ${song.recipientName}` : "Chanson"}
                 </h1>
                 <p className="text-sm text-white/60">
                   {song.occasion || "Projet spécial"} · <span className="capitalize">{styleLabel}</span>

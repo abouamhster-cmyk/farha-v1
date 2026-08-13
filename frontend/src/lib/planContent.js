@@ -4,11 +4,11 @@ export const PLAN_CONTENT = {
   pack4: {
     name: "Découverte",
     popular: false,
-    desc: "Testez le studio avec vos premiers sons",
+    desc: "Pour essayer",
     icon: Music,
     features: [
       "4 musiques complètes",
-      "Pochette d'album générée par IA",
+      "Pochette d'album incluse",
       "Paroles gratuites et modifiables",
       "Crédits sans expiration",
     ],
@@ -26,7 +26,7 @@ export const PLAN_CONTENT = {
     discountBadge: "-20 %",
     features: [
       "10 musiques complètes",
-      "Pochette d'album générée par IA",
+      "Pochette d'album incluse",
       "Paroles gratuites et modifiables",
       "Crédits sans expiration",
     ],
@@ -44,7 +44,7 @@ export const PLAN_CONTENT = {
     discountBadge: "-33 %",
     features: [
       "20 musiques complètes",
-      "Pochette d'album générée par IA",
+      "Pochette d'album incluse",
       "Paroles gratuites et modifiables",
       "Droits d'usage commercial inclus",
       "Crédits sans expiration",
@@ -63,7 +63,7 @@ export const PLAN_CONTENT = {
     discountBadge: "-35 %",
     features: [
       "40 musiques complètes",
-      "Pochette d'album générée par IA",
+      "Pochette d'album incluse",
       "Paroles gratuites et modifiables",
       "Droits d'usage commercial inclus",
       "Crédits sans expiration",

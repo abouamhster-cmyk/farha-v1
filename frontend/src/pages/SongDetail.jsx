@@ -311,7 +311,7 @@ export default function SongDetail() {
               </span>
             )}
           </div>
-          <h1 className="font-display text-xl sm:text-2xl lg:text-4xl font-bold">{song.occasion || "Musique personnalisée"}</h1>
+          <h1 className="font-display text-xl sm:text-2xl lg:text-4xl font-bold">{song.occasion || "Ma chanson"}</h1>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 text-xs text-muted flex-wrap">

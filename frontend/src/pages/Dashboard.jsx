@@ -145,13 +145,13 @@ export default function Dashboard() {
               {greeting}, {firstName || "Créateur"}
             </div>
             <h1 className="font-display text-2xl sm:text-4xl font-bold flex items-center gap-3 flex-wrap">
-              <span>Votre Studio de Création</span>
+              <span>Vos chansons</span>
               <span className="font-arabic text-safran text-lg sm:text-2xl bg-white/10 px-3 py-1 rounded-xl border border-white/15 backdrop-blur-sm">
                 مرحبا بكم
               </span>
             </h1>
             <p className="text-white/70 text-xs sm:text-sm max-w-[580px] leading-relaxed">
-              Transformez vos idées en morceaux uniques et pochettes d'album artistiques en Darija, Égyptien ou Fusha.
+              Créez des chansons en Darija, Égyptien, Fusha et plus.
             </p>
           </div>
 
@@ -159,7 +159,7 @@ export default function Dashboard() {
             to="/creer"
             className="inline-flex items-center justify-center gap-2.5 bg-henne hover:bg-henne-light text-white font-bold px-8 py-4 rounded-2xl shadow-[0_10px_25px_rgba(184,58,40,0.45)] transition-all hover:-translate-y-0.5 text-base flex-shrink-0 cursor-pointer border border-white/10"
           >
-            <PlusCircle size={20} /> Nouvelle Création →
+            <PlusCircle size={20} /> Nouvelle chanson →
           </Link>
         </div>
       </div>
@@ -309,9 +309,9 @@ export default function Dashboard() {
             <div className="w-16 h-16 rounded-2xl bg-safran/15 flex items-center justify-center mx-auto text-safran shadow-inner">
               <Mic2 size={32} />
             </div>
-            <h3 className="font-display text-2xl font-bold">Votre première création vous attend</h3>
+            <h3 className="font-display text-2xl font-bold">Pas encore de chanson</h3>
             <p className="text-muted max-w-[480px] mx-auto text-xs sm:text-sm leading-relaxed">
-              Composez un morceau sur-mesure pour vos réseaux sociaux, publicités de marque ou événements de famille.
+              Créez votre première chanson pour vos réseaux, vos pubs ou vos fêtes de famille.
             </p>
             <Link
               to="/creer"
@@ -360,7 +360,7 @@ export default function Dashboard() {
                     </div>
 
                     <h3 className="font-display font-bold text-lg mb-1 group-hover:text-emerald transition-colors line-clamp-1">
-                      {song.occasion || "Musique personnalisée"}
+                      {song.occasion || "Ma chanson"}
                     </h3>
 
                     <p className="text-muted text-xs sm:text-sm mb-4">

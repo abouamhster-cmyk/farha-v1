@@ -58,7 +58,7 @@ export default function Login() {
       <div className="relative z-10 w-full max-w-[440px] text-center">
 
         <h1 className="font-display text-2xl sm:text-3xl font-bold mb-1 drop-shadow-md">Bon retour sur Farha</h1>
-        <p className="text-white/70 text-xs sm:text-sm mb-6">Le Studio Créatif Audio en Darija</p>
+        <p className="text-white/70 text-xs sm:text-sm mb-6">Chansons en Darija, Raï, Chaâbi & plus</p>
 
         {/* CARTE TRANSLUCIDE (GLASSMORPHISM) */}
         <div className="bg-[#0C0F0E]/80 border border-white/15 rounded-3xl p-5 sm:p-8 backdrop-blur-xl shadow-2xl text-left">
