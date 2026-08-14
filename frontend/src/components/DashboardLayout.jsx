@@ -19,7 +19,7 @@ export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  if (loading || !profile) {
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#0C0F0E]">
         <div className="flex items-center gap-2 font-display font-bold text-lg text-white mb-6">
@@ -31,7 +31,8 @@ export default function DashboardLayout({ children }) {
     );
   }
 
-  const initials = profile.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const displayName = profile?.full_name || "Mon compte";
+  const initials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   function NavContent({ onNav }) {
     return (
@@ -83,8 +84,8 @@ export default function DashboardLayout({ children }) {
               {initials}
             </div>
             <div className="min-w-0">
-              <div className="text-[0.8rem] font-semibold text-white truncate">{profile.full_name}</div>
-              <div className="text-[0.7rem] text-white/35">{profile.credits} crédit{profile.credits !== 1 ? "s" : ""}</div>
+              <div className="text-[0.8rem] font-semibold text-white truncate">{displayName}</div>
+              <div className="text-[0.7rem] text-white/35">{profile?.credits ?? 0} crédit{(profile?.credits ?? 0) !== 1 ? "s" : ""}</div>
             </div>
           </div>
           <button
