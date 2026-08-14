@@ -181,18 +181,36 @@ export default function SongDetail() {
   }, [audioUrl]);
 
   const togglePlay = async () => {
-    if (!audioRef.current) return;
+    const el = audioRef.current;
+    if (!el) return;
+
+    if (isPlaying) {
+      el.pause();
+      setIsPlaying(false);
+      return;
+    }
+
     try {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        await audioRef.current.play();
-        setIsPlaying(true);
-      }
+      await el.play();
+      setIsPlaying(true);
     } catch (err) {
-      console.error("Erreur lecture audio:", err);
-      setError("Impossible de lire le fichier audio.");
+      // Souvent l'élément n'est pas encore prêt (src fraîchement changée
+      // après une régénération). On force le chargement puis on réessaie
+      // dès que la lecture est possible — plus besoin de cliquer 2 fois.
+      try {
+        el.load();
+        await new Promise((resolve) => {
+          let done = false;
+          const finish = () => { if (!done) { done = true; el.removeEventListener("canplay", finish); resolve(); } };
+          el.addEventListener("canplay", finish);
+          setTimeout(finish, 2500);
+        });
+        await el.play();
+        setIsPlaying(true);
+      } catch (err2) {
+        console.error("Erreur lecture audio:", err2);
+        setError("Lecture impossible pour le moment. Réessayez dans un instant.");
+      }
     }
   };
 
@@ -382,6 +400,21 @@ export default function SongDetail() {
         {/* COLONNE GAUCHE : LECTEUR + GESTION */}
         <div className="lg:col-span-5 flex flex-col space-y-5 sm:space-y-6">
 
+          {/* Régénération de la musique : indicateur clair */}
+          {regeneratingMusic && (
+            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden p-8 text-center shadow-xl border border-white/15 text-white bg-[#0C0F0E] animate-slideUp">
+              <div className="absolute -top-16 -right-16 w-40 h-40 bg-safran/20 rounded-full blur-3xl animate-haloPulse pointer-events-none" />
+              <div className="relative z-10">
+                <Loader2 size={36} className="text-safran animate-spin mx-auto mb-4" />
+                <p className="font-bold text-base">Nouvelle version en cours de composition…</p>
+                <p className="text-xs text-white/60 mt-1.5">Cela prend 30 à 45 secondes. La musique se rafraîchira automatiquement.</p>
+                <div className="mt-4 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full w-1/3 bg-gradient-to-r from-safran to-safran-bright rounded-full animate-shimmer" style={{ backgroundSize: "200% 100%" }} />
+                </div>
+              </div>
+            </div>
+          )}
+
           {isGenerating && !regeneratingMusic && (
             <div className="bg-safran/10 border border-safran/30 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center shadow-sm">
               <Loader2 size={32} className="text-safran animate-spin mx-auto mb-3" />
@@ -409,8 +442,10 @@ export default function SongDetail() {
               <div className="relative z-10 space-y-5 sm:space-y-6">
                 {audioUrl && (
                   <audio
+                    key={audioUrl}
                     ref={audioRef}
                     src={audioUrl}
+                    preload="auto"
                     onTimeUpdate={handleTimeUpdate}
                     onLoadedMetadata={handleTimeUpdate}
                     onEnded={() => setIsPlaying(false)}

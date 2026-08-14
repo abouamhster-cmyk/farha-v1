@@ -59,7 +59,6 @@ Deno.serve(async (req: Request) => {
         lyrics: willCopyLyrics ? source.lyrics : null,
         lyrics_fr: willCopyLyrics ? source.lyrics_fr : null,
         lyrics_version: 0,
-        lyrics_history: [],
         // Aucune musique heritée : la variante repart d'un brouillon propre
         status: willCopyLyrics ? "lyrics_ready" : "draft",
         // Filiation

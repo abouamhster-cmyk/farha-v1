@@ -37,12 +37,14 @@ const STYLE_MAP: Record<string, string> = {
   rnb: "R&B/afrobeat fusion moderne (groove chaloupé, mélodie soul, ambiance urbaine actuelle)",
 };
 
+// Timbre de l'interprete (le "qui chante") — SEPARE de la perspective
+// narrative (le "de qui / a qui parle la chanson"), gerée plus bas.
 const VOICE_MAP: Record<string, string> = {
-  homme: "voix masculine solo — écris à la première personne du masculin",
-  femme: "voix féminine solo — écris à la première personne du féminin",
-  duo: "duo homme/femme qui se répondent — alterne des lignes/couplets entre une voix masculine et une voix féminine, comme un dialogue chanté",
-  choeurs: "groupe/chœurs qui chantent ensemble — écris au \"nous\", refrain pensé pour être repris en chœur par plusieurs voix",
-  enfant: "voix d'enfant — ton innocent, joyeux et simple, vocabulaire accessible à un enfant",
+  homme: "interprétée par une voix masculine solo",
+  femme: "interprétée par une voix féminine solo",
+  duo: "interprétée en duo homme/femme qui se répondent (alterne les couplets entre les deux voix)",
+  choeurs: "interprétée par un groupe / des chœurs (refrain repris en chœur)",
+  enfant: "portée par une voix d'enfant au timbre doux et innocent",
 };
 
 function buildPrompt(song: {
@@ -70,34 +72,33 @@ function buildPrompt(song: {
     categoryGuidance = "FORMAT CÉLÉBRATION & FÊTE : Écris une chanson festive, chaleureuse et émouvante pour célébrer ce moment en famille ou entre amis.";
   }
 
-  return `Tu es un auteur-compositeur et parolier professionnel de premier plan. Écris les paroles d'une chanson COMPLÈTE, longue et détaillée en ${dialect}.
+  const perspective = target
+    ? `PERSPECTIVE (TRÈS IMPORTANT) : La chanson est DÉDIÉE à "${target}". Le narrateur est la personne qui OFFRE la chanson (par exemple un parent qui chante POUR son enfant, un ami POUR un ami) et s'adresse à "${target}" avec sincérité et émotion. "${target}" n'est PAS le narrateur et ne chante pas sur lui-même — SAUF si le brief demande explicitement que "${target}" chante à la première personne. Mentionne "${target}" clairement plusieurs fois.`
+    : `PERSPECTIVE : écris de façon naturelle et incarnée, à la première personne.`;
+
+  return `Tu es un parolier professionnel reconnu. Écris les paroles d'une belle chanson en ${dialect}, sincère et naturelle — jamais robotique ni plaquée.
 
 LANGUE / DIALECTE : ${dialect}. Utilise l'alphabet arabe pour la version principale.
 STYLE MUSICAL : ${style}
-VOIX : ${voice}
+INTERPRÉTATION : la chanson est ${voice}.
 USAGE / AMBIANCE : ${categoryGuidance}
-${target ? `SUJET / MARQUE / DESTINATAIRE : ${target} — doit être mentionné clairement plusieurs fois.` : ""}
-INSTRUCTIONS / BRIEF CLIENT : "${song.brief}"
+${perspective}
+BRIEF DU CLIENT : "${song.brief}"
 
-RÈGLES ANTI-PARESSE STRICTES (POUR ÉVITER LES TEXTES TROP COURTS) :
-1. LONGUEUR MINIMALE : Le texte total de la chanson doit être riche, dense et faire au moins 300 à 400 mots. Interdiction d'écrire des phrases minimalistes ou des vers de 2 ou 3 mots. Chaque ligne doit être complète et rythmée.
-2. STRUCTURE COMPLÈTE OBLIGATOIRE :
-   - [Couplet 1] : 6 à 8 lignes complètes. Développe l'introduction et le décor.
-   - [Refrain] : 4 lignes percutantes et mémorables.
-   - [Couplet 2] : 6 à 8 lignes complètes. Fais progresser l'histoire ou le message.
-   - [Refrain] : 4 lignes.
-   - [Pont] : 4 à 6 lignes. Change de rythme et apporte une réflexion ou une émotion profonde.
-   - [Refrain] : 4 lignes.
-   - [Outro] : 4 lignes de conclusion en dégradé.
+QUALITÉ & STRUCTURE :
+- Reste fidèle au brief et à la perspective ci-dessus : c'est le plus important.
+- Paroles fluides, imagées et émotionnelles, adaptées au dialecte du quotidien.
+- Adapte la longueur et le ton au style : un morceau festif (chaâbi, raï) est riche et entraînant ; une berceuse ou une chanson tendre est plus douce, intime et peut être plus courte.
+- Structure claire avec des balises : [Couplet 1], [Refrain] (mémorable, répété), [Couplet 2], [Pont] si pertinent, [Outro]. Plusieurs couplets et un vrai refrain.
 
-FORMAT DE RÉPONSE STRICT (Respecte ces balises exactes) :
+FORMAT DE RÉPONSE STRICT (balises exactes) :
 DARIJA:
-[Mets ici l'intégralité des paroles en arabe avec les balises [Couplet 1], [Refrain], [Pont], etc.]
+[l'intégralité des paroles en arabe avec les balises [Couplet 1], [Refrain], etc.]
 
 FRANCAIS:
-[Mets ici la traduction française complète, structurée exactement de la même manière]
+[la traduction française complète, structurée exactement de la même manière]
 
-GÉNÈRE MAINTENANT LA CHANSON COMPLÈTE :`;
+GÉNÈRE MAINTENANT LA CHANSON :`;
 }
 
 // MODE LIBRE : le client a tout décrit lui-même dans le brief. On ne lui
@@ -108,27 +109,31 @@ function buildFreePrompt(song: {
   brief: string;
 }): string {
   const target = song.recipient_name ?? "";
-  return `Tu es un auteur-compositeur et parolier professionnel de premier plan. Un client décrit LIBREMENT la chanson qu'il souhaite. Écris des paroles COMPLÈTES, longues et détaillées qui répondent exactement à sa demande.
+  const perspective = target
+    ? `PERSPECTIVE (TRÈS IMPORTANT) : La chanson est DÉDIÉE à "${target}". Le narrateur est la personne qui OFFRE la chanson (ex : un parent POUR son enfant) et s'adresse à "${target}" avec émotion. "${target}" n'est PAS le narrateur et ne chante pas sur lui-même, SAUF si la demande le précise explicitement.`
+    : `PERSPECTIVE : si la demande implique une dédicace "pour quelqu'un", écris du point de vue de celui qui offre la chanson et adresse-toi à cette personne (ne la fais pas chanter sur elle-même, sauf demande explicite).`;
 
-DEMANDE LIBRE DU CLIENT (fais-en la référence absolue) :
+  return `Tu es un parolier professionnel reconnu. Un client décrit LIBREMENT la chanson qu'il souhaite. Écris de belles paroles, sincères et naturelles, qui répondent EXACTEMENT à sa demande.
+
+DEMANDE LIBRE DU CLIENT (référence absolue) :
 "${song.brief}"
 
-${target ? `SUJET / MARQUE / DESTINATAIRE : ${target} — à mentionner clairement plusieurs fois.` : ""}
+${perspective}
 
 RÈGLES :
-1. Déduis TOI-MÊME de la demande : la langue / le dialecte, le style musical et le type de voix. Respecte scrupuleusement ce que le client précise. S'il ne précise PAS la langue, écris en darija marocaine authentique.
+1. Déduis TOI-MÊME de la demande : la langue / le dialecte, le style musical, le type de voix et le TON. Respecte scrupuleusement tout ce que le client précise. S'il ne précise pas la langue, écris en darija marocaine authentique.
 2. Écris la version principale dans la langue/dialecte demandé (alphabet arabe si c'est un dialecte arabe).
-3. LONGUEUR : texte riche et dense, au moins 300 à 400 mots. Pas de vers minimalistes.
-4. STRUCTURE COMPLÈTE : [Couplet 1] (6-8 lignes), [Refrain] (4 lignes), [Couplet 2] (6-8 lignes), [Refrain], [Pont] (4-6 lignes), [Refrain], [Outro] (4 lignes).
+3. Adapte la longueur et le ton au type de chanson demandé (une berceuse est douce et intime ; un morceau festif est riche et entraînant). Évite les paroles plaquées ou robotiques.
+4. Structure claire avec balises : [Couplet 1], [Refrain] (mémorable), [Couplet 2], [Pont] si pertinent, [Outro].
 
 FORMAT DE RÉPONSE STRICT (balises exactes) :
 DARIJA:
-[l'intégralité des paroles dans la langue/dialecte demandé, avec les balises [Couplet 1], [Refrain], [Pont], etc.]
+[l'intégralité des paroles dans la langue/dialecte demandé, avec les balises]
 
 FRANCAIS:
 [la traduction française complète, structurée exactement de la même manière]
 
-GÉNÈRE MAINTENANT LA CHANSON COMPLÈTE :`;
+GÉNÈRE MAINTENANT LA CHANSON :`;
 }
 
 function parseLyrics(raw: string): { darija: string; french: string } {
@@ -251,13 +256,13 @@ Deno.serve(async (req: Request) => {
         ].slice(-10)
       : priorHistory;
 
+    // Update CRITIQUE : uniquement des colonnes garanties. Ne casse jamais.
     const { data: updated, error: updateErr } = await admin
       .from("songs")
       .update({
         lyrics: darija,
         lyrics_fr: french,
         lyrics_version: song.lyrics_version + 1,
-        lyrics_history: nextHistory,
         status: "lyrics_ready",
       })
       .eq("id", songId)
@@ -266,17 +271,15 @@ Deno.serve(async (req: Request) => {
 
     if (updateErr) throw updateErr;
 
-    // Best-effort : marque le mode libre pour un affichage coherent.
-    // Fait a part et sans throw : si la colonne free_mode n'existe pas
-    // encore (migration 0017 non appliquee), la generation reste OK.
-    const { data: withFlag } = await admin
-      .from("songs")
-      .update({ free_mode: !!freeMode })
-      .eq("id", songId)
-      .select()
-      .maybeSingle();
+    // Best-effort : colonnes optionnelles (migrations 0013 / 0017). Chaque
+    // update est isolé et sans throw : si la colonne n'existe pas encore,
+    // la génération reste OK (l'erreur est simplement ignorée).
+    await admin.from("songs").update({ lyrics_history: nextHistory }).eq("id", songId);
+    await admin.from("songs").update({ free_mode: !!freeMode }).eq("id", songId);
 
-    return jsonResponse({ song: withFlag ?? updated });
+    const { data: fresh } = await admin.from("songs").select("*").eq("id", songId).maybeSingle();
+
+    return jsonResponse({ song: fresh ?? updated });
   } catch (err) {
     console.error("Lyrics generation error:", err);
     return jsonResponse({ error: (err as Error).message }, 500);
