@@ -26,17 +26,17 @@ Deno.serve(async (req: Request) => {
 
     const firstName = (profile.full_name || "").split(" ")[0] || "Créateur";
 
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) {
-      console.warn("RESEND_API_KEY non configurée, email non envoyé");
+    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+    if (!BREVO_API_KEY) {
+      console.warn("BREVO_API_KEY non configurée, email non envoyé");
       await admin
         .from("profiles")
         .update({ welcome_email_sent: true })
         .eq("id", record.id);
-      return jsonResponse({ status: "skipped", reason: "no_resend_key" });
+      return jsonResponse({ status: "skipped", reason: "no_brevo_key" });
     }
 
-    const html = `
+    const htmlContent = `
       <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#14110F">
         <div style="text-align:center;margin-bottom:28px">
           <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#B83A28;margin-right:8px;vertical-align:middle"></span>
@@ -61,23 +61,27 @@ Deno.serve(async (req: Request) => {
       </div>
     `;
 
-    const res = await fetch("https://api.resend.com/emails", {
+    const senderEmail = Deno.env.get("EMAIL_FROM") || "noreply@farha.app";
+    const senderName = Deno.env.get("EMAIL_FROM_NAME") || "Farha";
+
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "api-key": BREVO_API_KEY,
         "Content-Type": "application/json",
+        "Accept": "application/json",
       },
       body: JSON.stringify({
-        from: Deno.env.get("EMAIL_FROM") || "Farha <noreply@farha.app>",
-        to: [email],
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email, name: profile.full_name || firstName }],
         subject: `Bienvenue sur Farha, ${firstName} !`,
-        html,
+        htmlContent,
       }),
     });
 
     if (!res.ok) {
       const err = await res.text();
-      console.error("Resend error:", err);
+      console.error("Brevo error:", err);
       return jsonResponse({ error: "Échec envoi email" }, 500);
     }
 
