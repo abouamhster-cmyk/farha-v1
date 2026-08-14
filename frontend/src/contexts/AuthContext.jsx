@@ -41,15 +41,24 @@ export function AuthProvider({ children }) {
         return;
       }
 
+      if (error) {
+        console.error("[AuthContext] Echec chargement profil:", error.message, error.code);
+      }
+
       try {
         await callFunction("ensure-profile", {});
-        const { data: retryData } = await supabase
+        const { data: retryData, error: retryError } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", session.user.id)
           .single();
+        if (retryError) {
+          console.error("[AuthContext] Echec relecture profil:", retryError.message, retryError.code);
+        }
         setProfile(retryData);
-      } catch {}
+      } catch (e) {
+        console.error("[AuthContext] ensure-profile a echoue:", e);
+      }
 
       setProfileReady(true);
     }

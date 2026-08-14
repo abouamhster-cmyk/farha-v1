@@ -68,41 +68,12 @@ FROM auth.users u
 LEFT JOIN public.profiles p ON p.id = u.id
 WHERE p.id IS NULL;
 
--- 4. RLS admin (lecture cross-user pour le dashboard admin)
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE policyname = 'Admins can read all profiles' AND tablename = 'profiles'
-  ) THEN
-    CREATE POLICY "Admins can read all profiles"
-      ON profiles FOR SELECT TO authenticated
-      USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE policyname = 'Admins can read all orders' AND tablename = 'orders'
-  ) THEN
-    CREATE POLICY "Admins can read all orders"
-      ON orders FOR SELECT TO authenticated
-      USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE policyname = 'Admins can read all songs' AND tablename = 'songs'
-  ) THEN
-    CREATE POLICY "Admins can read all songs"
-      ON songs FOR SELECT TO authenticated
-      USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE policyname = 'Admins can read all share_links' AND tablename = 'share_links'
-  ) THEN
-    CREATE POLICY "Admins can read all share_links"
-      ON share_links FOR SELECT TO authenticated
-      USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
-  END IF;
-END $$;
+-- 4. (Les policies "Admins can read all ..." ont ete RETIREES ici.)
+--    Elles faisaient un SELECT sur profiles dans leur propre clause
+--    USING sur profiles -> recursion infinie (42P17) -> plus aucun
+--    profil ne se chargeait. Le dashboard admin passe de toute facon
+--    par des Edge Functions en service_role qui contournent le RLS.
+--    Voir migration 0012 pour le correctif si 0011 a deja ete execute.
 
 -- 5. Share links table (si pas encore créée)
 CREATE TABLE IF NOT EXISTS share_links (
