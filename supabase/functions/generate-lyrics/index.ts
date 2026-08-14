@@ -100,6 +100,37 @@ FRANCAIS:
 GÉNÈRE MAINTENANT LA CHANSON COMPLÈTE :`;
 }
 
+// MODE LIBRE : le client a tout décrit lui-même dans le brief. On ne lui
+// impose aucun preset de langue/style/voix — l'IA les déduit de sa demande.
+function buildFreePrompt(song: {
+  recipient_name: string | null;
+  occasion: string | null;
+  brief: string;
+}): string {
+  const target = song.recipient_name ?? "";
+  return `Tu es un auteur-compositeur et parolier professionnel de premier plan. Un client décrit LIBREMENT la chanson qu'il souhaite. Écris des paroles COMPLÈTES, longues et détaillées qui répondent exactement à sa demande.
+
+DEMANDE LIBRE DU CLIENT (fais-en la référence absolue) :
+"${song.brief}"
+
+${target ? `SUJET / MARQUE / DESTINATAIRE : ${target} — à mentionner clairement plusieurs fois.` : ""}
+
+RÈGLES :
+1. Déduis TOI-MÊME de la demande : la langue / le dialecte, le style musical et le type de voix. Respecte scrupuleusement ce que le client précise. S'il ne précise PAS la langue, écris en darija marocaine authentique.
+2. Écris la version principale dans la langue/dialecte demandé (alphabet arabe si c'est un dialecte arabe).
+3. LONGUEUR : texte riche et dense, au moins 300 à 400 mots. Pas de vers minimalistes.
+4. STRUCTURE COMPLÈTE : [Couplet 1] (6-8 lignes), [Refrain] (4 lignes), [Couplet 2] (6-8 lignes), [Refrain], [Pont] (4-6 lignes), [Refrain], [Outro] (4 lignes).
+
+FORMAT DE RÉPONSE STRICT (balises exactes) :
+DARIJA:
+[l'intégralité des paroles dans la langue/dialecte demandé, avec les balises [Couplet 1], [Refrain], [Pont], etc.]
+
+FRANCAIS:
+[la traduction française complète, structurée exactement de la même manière]
+
+GÉNÈRE MAINTENANT LA CHANSON COMPLÈTE :`;
+}
+
 function parseLyrics(raw: string): { darija: string; french: string } {
   const cleaned = raw.replace(/\*+/g, "").replace(/#+\s*/g, "").trim();
 
@@ -120,7 +151,7 @@ Deno.serve(async (req: Request) => {
     const user = await getAuthedUser(req);
     if (!user) return jsonResponse({ error: "Non authentifié" }, 401);
 
-    const { songId } = await req.json();
+    const { songId, freeMode } = await req.json();
     if (!songId) return jsonResponse({ error: "songId requis" }, 400);
 
     const admin = getSupabaseAdmin();
@@ -152,7 +183,7 @@ Deno.serve(async (req: Request) => {
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
     if (!geminiKey) throw new Error("GEMINI_API_KEY manquante");
 
-    const prompt = buildPrompt(song);
+    const prompt = freeMode ? buildFreePrompt(song) : buildPrompt(song);
     let darija: string | null = null;
     let french: string | null = null;
 

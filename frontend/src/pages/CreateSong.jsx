@@ -229,6 +229,8 @@ export default function CreateSong() {
   const [translationLang, setTranslationLang] = useState("fr");
   const [lyricsVersion, setLyricsVersion] = useState(0);
   const [activeTab, setActiveTab] = useState("darija");
+  // Mode libre : l'utilisateur décrit tout lui-même (aucun preset imposé).
+  const [freeMode, setFreeMode] = useState(false);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -301,14 +303,15 @@ export default function CreateSong() {
       if (draft.step) { setStep(draft.step); setMaxStep(Math.max(draft.step, draft.lyrics ? 2 : 1)); }
       if (draft.lyrics) setMaxStep((m) => Math.max(m, 2));
       if (draft.activeTab) setActiveTab(draft.activeTab);
+      if (draft.freeMode) setFreeMode(true);
       setDraftRestored(true);
       setTimeout(() => setDraftRestored(false), 4000);
     }
   }, [loadSongId]);
 
   useEffect(() => {
-    saveDraft({ form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab });
-  }, [form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab]);
+    saveDraft({ form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab, freeMode });
+  }, [form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab, freeMode]);
 
   const applyTemplate = (tmpl) => {
     setForm({
@@ -462,7 +465,7 @@ export default function CreateSong() {
     else setLoading(true);
 
     try {
-      const { song } = await callFunction("generate-lyrics", { songId: id ?? songId });
+      const { song } = await callFunction("generate-lyrics", { songId: id ?? songId, freeMode });
       setLyrics(song.lyrics ?? "");
       setLyricsFr(song.lyrics_fr ?? "");
       if (translationLang === "fr") setTranslatedLyrics(song.lyrics_fr ?? "");
@@ -643,6 +646,31 @@ export default function CreateSong() {
             </div>
           </div>
 
+          {/* Bascule : Formulaire guidé / Mode libre */}
+          <div className="flex items-center gap-1.5 bg-cream rounded-2xl p-1.5 border border-line">
+            <button
+              type="button"
+              onClick={() => setFreeMode(false)}
+              className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer ${!freeMode ? "bg-white text-ink shadow-sm border border-line" : "text-muted hover:text-ink"}`}
+            >
+              Formulaire guidé
+            </button>
+            <button
+              type="button"
+              onClick={() => setFreeMode(true)}
+              className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${freeMode ? "bg-white text-ink shadow-sm border border-line" : "text-muted hover:text-ink"}`}
+            >
+              <Sparkles size={14} className={freeMode ? "text-safran" : "text-emerald"} /> Mode libre
+            </button>
+          </div>
+
+          {freeMode && (
+            <div className="bg-safran/5 border border-safran/25 rounded-2xl p-3.5 text-xs sm:text-sm text-muted leading-relaxed">
+              <strong className="text-ink">Décrivez tout vous-même</strong> — langue / dialecte, style, type de voix, occasion, message et détails, comme vous voulez. L'IA suit votre description : <strong>aucun choix imposé</strong>.
+            </div>
+          )}
+
+          {!freeMode && (<>
           {/* Suggestions de prompts */}
           <details className="bg-cream/80 border border-safran/30 rounded-2xl overflow-hidden group">
             <summary className="p-3 sm:p-4 font-bold text-xs sm:text-sm text-emerald cursor-pointer flex items-center justify-between list-none hover:bg-safran/10 transition-colors">
@@ -745,22 +773,32 @@ export default function CreateSong() {
               })}
             </div>
           </div>
+          </>)}
 
-          {/* 5. Destinataire */}
+          {/* Destinataire (les deux modes) */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">5. Destinataire, marque ou prénom (optionnel)</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">
+              {freeMode ? "Destinataire, marque ou prénom (optionnel)" : "5. Destinataire, marque ou prénom (optionnel)"}
+            </label>
             <input className="input-field" value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })} placeholder="Ex : Marque 'Atlas Wear', Yasmine, Mon pote Reda" />
           </div>
 
-          {/* 6. Brief */}
+          {/* Brief / Description libre */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">6. Vos instructions & détails</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">
+              {freeMode ? "Votre chanson, décrite librement" : "6. Vos instructions & détails"}
+            </label>
             <textarea
-              className="input-field min-h-[120px] sm:min-h-[140px] text-sm sm:text-base leading-relaxed"
+              className={`input-field text-sm sm:text-base leading-relaxed ${freeMode ? "min-h-[220px] sm:min-h-[260px]" : "min-h-[120px] sm:min-h-[140px]"}`}
               value={form.brief}
               onChange={(e) => setForm({ ...form, brief: e.target.value })}
-              placeholder="Racontez l'histoire, le message, la blague ou les détails sur le produit à mettre en valeur dans la chanson..."
+              placeholder={freeMode
+                ? "Ex : Une chanson douce pour mon fils Adam, en darija marocaine, style acoustique guitare, voix de femme. Parler de mon amour pour lui, de ses éclats de rire, et lui souhaiter un avenir lumineux…\n\n(Précisez la langue/dialecte, le style, la voix, l'occasion et le message — comme vous voulez.)"
+                : "Racontez l'histoire, le message, la blague ou les détails sur le produit à mettre en valeur dans la chanson..."}
             />
+            {freeMode && (
+              <p className="text-[0.65rem] text-muted mt-1.5">Plus vous êtes précis (langue, style, voix, ambiance), plus le résultat colle à votre idée.</p>
+            )}
           </div>
 
           {/* Bouton submit */}
