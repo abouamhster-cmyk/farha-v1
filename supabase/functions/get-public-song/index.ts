@@ -68,6 +68,19 @@ Deno.serve(async (req) => {
       coverUrl = data?.signedUrl ?? null;
     }
 
+    // Nom d'affichage du createur (pour le partage direct : "créée par ...").
+    let creatorName: string | null = null;
+    if (song.user_id) {
+      const { data: prof } = await admin
+        .from("profiles")
+        .select("full_name")
+        .eq("id", song.user_id)
+        .maybeSingle();
+      const fn = (prof?.full_name || "").trim();
+      // On ne renvoie que le prenom pour rester sobre et respectueux.
+      creatorName = fn ? fn.split(" ")[0] : null;
+    }
+
     return jsonResponse({
       song: {
         id: song.id,
@@ -75,6 +88,7 @@ Deno.serve(async (req) => {
         musicStyle: song.music_style,
         dialect: song.dialect,
         recipientName: song.recipient_name,
+        creatorName,
         createdAt: song.created_at,
         audioUrl,
         // conserve previewUrl pour compat éventuelle, pointe sur le même flux

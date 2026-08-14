@@ -219,6 +219,19 @@ export default function PublicSong() {
             </div>
           </div>
 
+          {/* Partage direct : on indique par qui / pour qui (jamais vide) */}
+          {!isPersonalized && (
+            <p className="text-center text-sm text-white/70 mb-6">
+              {song.recipientName ? (
+                <>Chanson pour <span className="text-white font-semibold">{song.recipientName}</span></>
+              ) : song.creatorName ? (
+                <>Une chanson créée par <span className="text-white font-semibold">{song.creatorName}</span></>
+              ) : (
+                "Une création Farha"
+              )}
+            </p>
+          )}
+
           {/* Message dédié (description = ce que le sender a écrit) */}
           {isPersonalized && share.message && (
             <p className="text-center text-sm text-white/75 italic leading-relaxed mb-6 px-2">
