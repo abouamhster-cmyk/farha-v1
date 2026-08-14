@@ -369,10 +369,10 @@ export default function SongDetail() {
       </div>
 
       {/* 2 colonnes */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
 
-        {/* COLONNE GAUCHE : LECTEUR */}
-        <div className="lg:col-span-5 flex flex-col justify-between space-y-5 sm:space-y-6">
+        {/* COLONNE GAUCHE : LECTEUR + GESTION */}
+        <div className="lg:col-span-5 flex flex-col space-y-5 sm:space-y-6">
 
           {isGenerating && !regeneratingMusic && (
             <div className="bg-safran/10 border border-safran/30 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center shadow-sm">
@@ -511,93 +511,103 @@ export default function SongDetail() {
             </div>
           )}
 
-          {/* Regenerer */}
-          {isUnlocked && (
-            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm">
-              <button
-                onClick={() => setShowRegenConfirm(true)}
-                disabled={regeneratingMusic || (profile?.credits ?? 0) === 0}
-                className="w-full flex items-center justify-center gap-2 border border-emerald text-emerald hover:bg-emerald hover:text-white font-bold py-3 rounded-2xl transition-all text-xs sm:text-sm disabled:opacity-50 cursor-pointer active:scale-[0.97]"
-              >
-                <RefreshCw size={16} /> Régénérer une autre version (1 crédit)
-              </button>
-            </div>
-          )}
-
-          {/* Revenir aux etapes : modifier les paroles ou l'idee de ce projet */}
+          {/* Carte de gestion unique : sections claires separees par des filets */}
           {song.lyrics && (
-            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-muted uppercase tracking-wider">
-                <RotateCcw size={13} className="text-emerald" /> Ajuster ce projet
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <Link
-                  to={`/creer?song=${song.id}&step=2`}
-                  className="flex items-center justify-center gap-1.5 border border-line hover:border-emerald text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs cursor-pointer active:scale-[0.97]"
-                >
-                  <FileText size={14} /> Paroles
-                </Link>
-                <Link
-                  to={`/creer?song=${song.id}&step=1`}
-                  className="flex items-center justify-center gap-1.5 border border-line hover:border-emerald text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs cursor-pointer active:scale-[0.97]"
-                >
-                  <Sparkles size={14} /> L'idée
-                </Link>
-              </div>
-            </div>
-          )}
+            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl shadow-sm divide-y divide-line overflow-hidden animate-slideUp" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
 
-          {/* Versions : lignée de la chanson (v1, v2, v3…) */}
-          <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-muted uppercase tracking-wider">
-                <Layers size={13} className="text-emerald" /> Versions
+              {/* Section AJUSTER */}
+              <div className="p-5 space-y-3">
+                <div className="flex items-center gap-2 text-[0.7rem] font-bold text-muted uppercase tracking-wider">
+                  <RotateCcw size={13} className="text-emerald" /> Ajuster ce projet
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Link
+                    to={`/creer?song=${song.id}&step=2`}
+                    className="flex items-center justify-center gap-1.5 border border-line hover:border-emerald hover:bg-emerald/5 text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs cursor-pointer active:scale-[0.97]"
+                  >
+                    <FileText size={14} /> Paroles
+                  </Link>
+                  <Link
+                    to={`/creer?song=${song.id}&step=1`}
+                    className="flex items-center justify-center gap-1.5 border border-line hover:border-emerald hover:bg-emerald/5 text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs cursor-pointer active:scale-[0.97]"
+                  >
+                    <Sparkles size={14} /> L'idée
+                  </Link>
+                </div>
               </div>
-              {lineage.length > 1 && (
-                <span className="text-[0.65rem] font-bold text-emerald bg-emerald/10 px-2 py-0.5 rounded-full border border-emerald/20">
-                  {lineage.length}
-                </span>
+
+              {/* Section VERSIONS */}
+              <div className="p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[0.7rem] font-bold text-muted uppercase tracking-wider">
+                    <Layers size={13} className="text-emerald" /> Versions
+                  </div>
+                  {lineage.length > 1 && (
+                    <span className="text-[0.65rem] font-bold text-emerald bg-emerald/10 px-2 py-0.5 rounded-full border border-emerald/20">
+                      {lineage.length} versions
+                    </span>
+                  )}
+                </div>
+
+                {lineage.length > 1 && (
+                  <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                    {lineage.map((v) => {
+                      const current = v.id === song.id;
+                      return (
+                        <Link
+                          key={v.id}
+                          to={`/chanson/${v.id}`}
+                          className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs transition-colors ${
+                            current ? "border-emerald bg-emerald/5 text-ink font-bold" : "border-line hover:border-emerald/40 text-muted"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[0.65rem] font-bold flex-shrink-0 ${current ? "bg-emerald text-white" : "bg-cream text-muted"}`}>
+                              v{v.version_number}
+                            </span>
+                            <span className="truncate">{VARIANT_STATUS_LABEL[v.status] || v.status}</span>
+                          </span>
+                          {current && <Check size={13} className="text-emerald flex-shrink-0" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleCreateVariant}
+                  disabled={creatingVariant}
+                  className="w-full flex items-center justify-center gap-2 border border-emerald text-emerald hover:bg-emerald hover:text-white font-bold py-2.5 rounded-xl transition-colors text-xs disabled:opacity-50 cursor-pointer active:scale-[0.97]"
+                >
+                  {creatingVariant
+                    ? <><Loader2 size={14} className="animate-spin" /> Création…</>
+                    : <><Plus size={14} /> Créer une nouvelle version</>}
+                </button>
+                <p className="text-[0.65rem] text-muted leading-relaxed">
+                  Repart des mêmes paroles et garde <strong>cette chanson intacte</strong>.
+                </p>
+              </div>
+
+              {/* Section MUSIQUE (regenerer) — seulement si debloquee */}
+              {isUnlocked && (
+                <div className="p-5 space-y-3">
+                  <div className="flex items-center gap-2 text-[0.7rem] font-bold text-muted uppercase tracking-wider">
+                    <Music size={13} className="text-emerald" /> Musique
+                  </div>
+                  <button
+                    onClick={() => setShowRegenConfirm(true)}
+                    disabled={regeneratingMusic || (profile?.credits ?? 0) === 0}
+                    className="w-full flex items-center justify-center gap-2 border border-line hover:border-emerald hover:bg-emerald/5 text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs disabled:opacity-50 cursor-pointer active:scale-[0.97]"
+                  >
+                    <RefreshCw size={14} /> Régénérer la musique (1 crédit)
+                  </button>
+                  <p className="text-[0.65rem] text-muted leading-relaxed">
+                    Recompose une nouvelle musique sur ces paroles et <strong>remplace</strong> l'actuelle.
+                  </p>
+                </div>
               )}
             </div>
-
-            {lineage.length > 1 && (
-              <div className="space-y-1.5 max-h-56 overflow-y-auto">
-                {lineage.map((v) => {
-                  const current = v.id === song.id;
-                  return (
-                    <Link
-                      key={v.id}
-                      to={`/chanson/${v.id}`}
-                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs transition-colors ${
-                        current ? "border-emerald bg-emerald/5 text-ink font-bold" : "border-line hover:border-emerald/40 text-muted"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2 min-w-0">
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[0.65rem] font-bold flex-shrink-0 ${current ? "bg-emerald text-white" : "bg-cream text-muted"}`}>
-                          v{v.version_number}
-                        </span>
-                        <span className="truncate">{VARIANT_STATUS_LABEL[v.status] || v.status}</span>
-                      </span>
-                      {current && <Check size={13} className="text-emerald flex-shrink-0" />}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-
-            <button
-              onClick={handleCreateVariant}
-              disabled={creatingVariant || !song.lyrics}
-              className="w-full flex items-center justify-center gap-2 bg-emerald hover:bg-emerald-light text-white font-bold py-2.5 rounded-xl transition-colors text-xs disabled:opacity-50 cursor-pointer active:scale-[0.97]"
-            >
-              {creatingVariant
-                ? <><Loader2 size={14} className="animate-spin" /> Création…</>
-                : <><Plus size={14} /> Créer une nouvelle version</>}
-            </button>
-            <p className="text-[0.65rem] text-muted leading-relaxed">
-              Une nouvelle version repart des mêmes paroles et garde <strong>cette chanson intacte</strong>.
-            </p>
-          </div>
+          )}
         </div>
 
         {/* COLONNE DROITE : PAROLES */}
