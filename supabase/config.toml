@@ -60,6 +60,9 @@ verify_jwt = false
 [functions.check-video-status]
 verify_jwt = false
 
+[functions.ensure-profile]
+verify_jwt = false
+
 [functions.admin-stats]
 verify_jwt = false
 

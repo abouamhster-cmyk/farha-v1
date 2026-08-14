@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient.js";
+import { supabase, callFunction } from "../lib/supabaseClient.js";
 
 const AuthContext = createContext(null);
 
@@ -25,18 +25,37 @@ export function AuthProvider({ children }) {
       setProfileReady(true);
       return;
     }
+
     setProfileReady(false);
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .single()
-      .then(({ data }) => {
+
+    async function loadProfile() {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
+
+      if (data) {
         setProfile(data);
         setProfileReady(true);
-      })
-      .catch(() => setProfileReady(true));
-  }, [session?.user?.id, session]);
+        return;
+      }
+
+      try {
+        await callFunction("ensure-profile", {});
+        const { data: retryData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
+        setProfile(retryData);
+      } catch {}
+
+      setProfileReady(true);
+    }
+
+    loadProfile();
+  }, [session?.user?.id]);
 
   const value = {
     session,
