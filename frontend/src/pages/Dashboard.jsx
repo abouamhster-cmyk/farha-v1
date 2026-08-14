@@ -43,7 +43,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(!cachedSongs);
   const [searchParams] = useSearchParams();
 
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  // Notification de paiement adaptee au VRAI resultat verifie cote serveur.
+  // type: "verifying" | "success" | "pending" | "failed" | "error"
+  const [paymentNotice, setPaymentNotice] = useState(null);
 
   const PAGE_SIZE = 20;
   const [searchQuery, setSearchQuery] = useState("");
@@ -79,24 +81,42 @@ export default function Dashboard() {
     const fedapayStatus = searchParams.get("status");
     const transactionId = searchParams.get("id");
 
-    if (checkoutStatus === "success" || fedapayStatus === "approved") {
-      callFunction("verify-payment", {
-        transactionId: transactionId || null,
-      }).then((res) => {
+    // On declenche la verification des qu'on revient d'un checkout, quel
+    // que soit ce que dit l'URL (Fedapay redirige toujours vers la meme
+    // page, meme si l'utilisateur n'a pas payé). Le VRAI statut est
+    // determine par le serveur qui interroge Fedapay directement.
+    const returningFromCheckout = checkoutStatus || fedapayStatus || transactionId;
+    if (!returningFromCheckout) return;
+
+    // Nettoyage immediat de l'URL (evite une re-verification au refresh).
+    const url = new URL(window.location.href);
+    url.searchParams.delete("checkout");
+    url.searchParams.delete("status");
+    url.searchParams.delete("id");
+    window.history.replaceState({}, "", url.pathname);
+
+    setPaymentNotice({ type: "verifying" });
+
+    callFunction("verify-payment", { transactionId: transactionId || null })
+      .then((res) => {
         if (res?.success) {
-          setPaymentSuccess(true);
+          setPaymentNotice({ type: "success", credits: res.creditsGranted });
           refreshProfile();
           loadSongs();
-          setTimeout(() => setPaymentSuccess(false), 6000);
+          setTimeout(() => setPaymentNotice(null), 7000);
+        } else if (res?.status === "failed") {
+          setPaymentNotice({ type: "failed", message: res.message });
+          setTimeout(() => setPaymentNotice(null), 9000);
+        } else {
+          // pending / unverified / no_order : paiement non finalisé, aucun crédit.
+          setPaymentNotice({ type: "pending", message: res?.message });
+          setTimeout(() => setPaymentNotice(null), 9000);
         }
-      }).catch(() => {});
-
-      const url = new URL(window.location.href);
-      url.searchParams.delete("checkout");
-      url.searchParams.delete("status");
-      url.searchParams.delete("id");
-      window.history.replaceState({}, "", url.pathname);
-    }
+      })
+      .catch(() => {
+        setPaymentNotice({ type: "error" });
+        setTimeout(() => setPaymentNotice(null), 9000);
+      });
   }, [searchParams]);
 
   // LOGIQUE DE FILTRAGE DYNAMIQUE
@@ -143,12 +163,41 @@ export default function Dashboard() {
   return (
     <div className="px-5 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-7xl mx-auto space-y-8">
 
-      {paymentSuccess && (
-        <div className="bg-emerald/10 text-emerald rounded-2xl p-4 sm:p-5 text-sm border border-emerald/20 flex items-center justify-between gap-3 animate-fade-in shadow-sm">
-          <div className="flex items-center gap-2.5 font-bold">
-            <CheckCircle2 size={20} className="text-emerald flex-shrink-0" />
-            <span>Paiement réussi ! Vos nouveaux crédits ont été ajoutés à votre solde.</span>
-          </div>
+      {paymentNotice?.type === "verifying" && (
+        <div className="bg-safran/10 text-ink rounded-2xl p-4 sm:p-5 text-sm border border-safran/25 flex items-center gap-2.5 font-bold animate-slideDown shadow-sm">
+          <Loader2 size={20} className="text-safran flex-shrink-0 animate-spin" />
+          <span>Vérification de votre paiement en cours…</span>
+        </div>
+      )}
+
+      {paymentNotice?.type === "success" && (
+        <div className="bg-emerald/10 text-emerald rounded-2xl p-4 sm:p-5 text-sm border border-emerald/20 flex items-center gap-2.5 font-bold animate-slideDown shadow-sm">
+          <CheckCircle2 size={20} className="text-emerald flex-shrink-0" />
+          <span>
+            Paiement confirmé !{" "}
+            {paymentNotice.credits ? `+${paymentNotice.credits} crédit${paymentNotice.credits > 1 ? "s" : ""} ajouté${paymentNotice.credits > 1 ? "s" : ""} à votre solde.` : "Vos crédits ont été ajoutés."}
+          </span>
+        </div>
+      )}
+
+      {paymentNotice?.type === "pending" && (
+        <div className="bg-safran/10 text-ink rounded-2xl p-4 sm:p-5 text-sm border border-safran/25 flex items-center gap-2.5 font-semibold animate-slideDown shadow-sm">
+          <AlertTriangle size={20} className="text-safran flex-shrink-0" />
+          <span>{paymentNotice.message || "Paiement non finalisé — aucun crédit n'a été ajouté. Si vous avez bien payé, patientez quelques instants puis rechargez la page."}</span>
+        </div>
+      )}
+
+      {paymentNotice?.type === "failed" && (
+        <div className="bg-henne/10 text-henne rounded-2xl p-4 sm:p-5 text-sm border border-henne/20 flex items-center gap-2.5 font-bold animate-slideDown shadow-sm">
+          <AlertTriangle size={20} className="text-henne flex-shrink-0" />
+          <span>{paymentNotice.message || "Paiement refusé ou annulé. Aucun crédit n'a été ajouté."}</span>
+        </div>
+      )}
+
+      {paymentNotice?.type === "error" && (
+        <div className="bg-henne/10 text-henne rounded-2xl p-4 sm:p-5 text-sm border border-henne/20 flex items-center gap-2.5 font-semibold animate-slideDown shadow-sm">
+          <AlertTriangle size={20} className="text-henne flex-shrink-0" />
+          <span>Impossible de vérifier le paiement pour le moment. Vos crédits seront ajoutés automatiquement une fois le paiement confirmé.</span>
         </div>
       )}
 
