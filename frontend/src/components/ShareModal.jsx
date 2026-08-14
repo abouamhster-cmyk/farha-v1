@@ -224,8 +224,26 @@ export default function ShareModal({ song, coverUrl, onClose }) {
                 <ChevronLeft size={14} /> Retour
               </button>
 
+              {/* TITRE : champ principal, ce que verra le destinataire en grand */}
+              <div className="bg-safran/5 border border-safran/25 rounded-2xl p-3">
+                <label className="block text-[0.68rem] font-bold uppercase tracking-wider text-safran mb-1 flex items-center gap-1.5">
+                  <Type size={13} /> Titre de la page
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Ex: Pour la meilleure maman du monde"
+                  className="input-field text-sm"
+                  maxLength={120}
+                />
+                <p className="text-[0.6rem] text-muted mt-1">
+                  C'est le grand titre affiché au destinataire. Si vous le laissez vide, on met par défaut «&nbsp;{(senderName.trim() || "Votre nom")} vous a dédié une chanson&nbsp;».
+                </p>
+              </div>
+
               <div>
-                <label className="block text-[0.68rem] font-bold uppercase tracking-wider text-muted mb-1">De la part de *</label>
+                <label className="block text-[0.68rem] font-bold uppercase tracking-wider text-muted mb-1">De la part de * (signature)</label>
                 <div className="relative">
                   <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                   <input
@@ -238,24 +256,6 @@ export default function ShareModal({ song, coverUrl, onClose }) {
                     required
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-[0.68rem] font-bold uppercase tracking-wider text-muted mb-1">Titre (optionnel)</label>
-                <div className="relative">
-                  <Type size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Ex: Pour la meilleure maman du monde"
-                    className="input-field pl-9 text-sm"
-                    maxLength={120}
-                  />
-                </div>
-                <p className="text-[0.6rem] text-muted mt-0.5">
-                  Vide = « {(senderName.trim() || "Votre nom")} vous a dédié une chanson »
-                </p>
               </div>
 
               <div>
