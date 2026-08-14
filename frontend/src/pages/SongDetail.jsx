@@ -665,6 +665,7 @@ export default function SongDetail() {
       {showShareModal && song && (
         <ShareModal
           song={song}
+          coverUrl={coverUrl}
           onClose={() => setShowShareModal(false)}
         />
       )}

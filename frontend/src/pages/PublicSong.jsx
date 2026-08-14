@@ -3,12 +3,6 @@ import { useParams, useSearchParams, Link } from "react-router-dom";
 import { callFunction } from "../lib/supabaseClient.js";
 import { Play, Pause, Music, Loader2, Sparkles, ArrowRight, Heart, Gift } from "lucide-react";
 
-const STYLE_LABEL = {
-  chaabi: "Chaâbi", rai: "Raï", rap: "Rap / Trap", pop: "Pop orientale",
-  acoustique: "Acoustique", gnawa: "Gnawa", oriental: "Orientale classique",
-  mezwed: "Mezwed", rnb: "R&B / Afro", amazigh: "Amazigh",
-};
-
 const EQ_BARS = [0, 1, 2, 3, 4, 5, 6];
 
 function formatTime(sec) {
@@ -111,7 +105,6 @@ export default function PublicSong() {
   }
 
   const isPersonalized = share?.shareType === "personalized" && share?.senderName;
-  const styleLabel = STYLE_LABEL[song.musicStyle] ?? song.musicStyle;
   const coverImage = song.coverUrl;
 
   // ---- Carte de révélation cinématique (dédicace personnalisée) ----
@@ -198,88 +191,85 @@ export default function PublicSong() {
           </div>
         )}
 
-        {/* Badge qualité */}
-        <div className="flex justify-center mb-5">
-          <span className="inline-flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-safran bg-safran/10 border border-safran/25 px-3 py-1 rounded-full">
-            <Sparkles size={11} /> {song.isFull ? "Chanson complète HD" : "Extrait"}
-          </span>
-        </div>
+        {/* Carte lecteur — glassmorphisme, profondeur */}
+        <div className="relative rounded-[32px] p-6 sm:p-8 bg-white/[0.05] backdrop-blur-2xl border border-white/10 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] overflow-hidden">
+          {/* reflet supérieur subtil */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
 
-        {/* Pochette animée avec halo */}
-        <div className="relative w-56 h-56 sm:w-64 sm:h-64 mx-auto mb-8">
-          <div className={`absolute -inset-4 rounded-[32px] bg-gradient-to-br from-safran/40 to-henne/40 blur-2xl ${isPlaying ? "animate-haloPulse" : "opacity-40"}`} />
-          <div className={`relative w-full h-full rounded-[28px] overflow-hidden shadow-2xl border border-white/15 ${isPlaying ? "animate-floatY" : ""}`}>
-            {coverImage ? (
-              <img src={coverImage} alt="Pochette" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-emerald via-[#0C0F0E] to-henne flex items-center justify-center">
-                <Music size={44} className="text-white/40" />
-              </div>
-            )}
+          {/* Badge qualité */}
+          <div className="flex justify-center mb-6">
+            <span className="inline-flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-safran bg-safran/10 border border-safran/25 px-3 py-1 rounded-full">
+              <Sparkles size={11} /> {song.isFull ? "Chanson complète HD" : "Extrait"}
+            </span>
           </div>
-        </div>
 
-        {/* Titre */}
-        <div className="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-safran flex items-center justify-center gap-1.5 mb-2">
-          <Sparkles size={12} /> Farha
-        </div>
-        <h1 className="font-display text-2xl sm:text-3xl font-bold text-white leading-snug mb-1.5">
-          {isPersonalized
-            ? `Chanson pour vous`
-            : song.recipientName
-              ? `Chanson pour ${song.recipientName}`
-              : "Votre chanson"}
-        </h1>
-        <p className="text-sm text-white/50 mb-8">
-          {song.occasion || "Projet spécial"} · <span className="capitalize">{styleLabel}</span>
-        </p>
-
-        {/* Lecteur */}
-        {song.audioUrl && (
-          <audio
-            ref={audioRef}
-            src={song.audioUrl}
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleTimeUpdate}
-            onEnded={() => setIsPlaying(false)}
-          />
-        )}
-
-        {/* Barre de progression */}
-        <div className="space-y-1.5 mb-6">
-          <div onClick={handleSeek} className="w-full h-2 bg-white/10 rounded-full overflow-hidden cursor-pointer border border-white/10">
-            <div className="h-full bg-gradient-to-r from-safran to-safran-bright rounded-full" style={{ width: `${(currentTime / (duration || 1)) * 100}%`, transition: "width 0.1s linear" }} />
+          {/* Pochette animée avec halo */}
+          <div className="relative w-52 h-52 sm:w-60 sm:h-60 mx-auto mb-6">
+            <div className={`absolute -inset-4 rounded-[32px] bg-gradient-to-br from-safran/40 to-henne/40 blur-2xl ${isPlaying ? "animate-haloPulse" : "opacity-40"}`} />
+            <div className={`relative w-full h-full rounded-[28px] overflow-hidden shadow-2xl border border-white/15 ${isPlaying ? "animate-floatY" : ""}`}>
+              {coverImage ? (
+                <img src={coverImage} alt="Pochette" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-emerald via-[#0C0F0E] to-henne flex items-center justify-center">
+                  <Music size={44} className="text-white/40" />
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex justify-between text-[0.65rem] text-white/40 font-semibold">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+
+          {/* Message dédié (description = ce que le sender a écrit) */}
+          {isPersonalized && share.message && (
+            <p className="text-center text-sm text-white/75 italic leading-relaxed mb-6 px-2">
+              "{share.message}"
+            </p>
+          )}
+
+          {/* Lecteur */}
+          {song.audioUrl && (
+            <audio
+              ref={audioRef}
+              src={song.audioUrl}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleTimeUpdate}
+              onEnded={() => setIsPlaying(false)}
+            />
+          )}
+
+          {/* Barre de progression */}
+          <div className="space-y-1.5 mb-6">
+            <div onClick={handleSeek} className="w-full h-2 bg-white/10 rounded-full overflow-hidden cursor-pointer border border-white/10">
+              <div className="h-full bg-gradient-to-r from-safran to-safran-bright rounded-full" style={{ width: `${(currentTime / (duration || 1)) * 100}%`, transition: "width 0.1s linear" }} />
+            </div>
+            <div className="flex justify-between text-[0.65rem] text-white/40 font-semibold">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
           </div>
-        </div>
 
-        {/* Bouton lecture + égaliseur */}
-        <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={togglePlay}
-            className="w-16 h-16 rounded-full bg-gradient-to-br from-safran to-henne text-white flex items-center justify-center shadow-[0_12px_30px_rgba(232,149,40,0.4)] transition-transform active:scale-95 cursor-pointer flex-shrink-0"
-          >
-            {isPlaying ? <Pause size={26} fill="currentColor" /> : <Play size={26} fill="currentColor" className="ml-1" />}
-          </button>
+          {/* Bouton lecture + égaliseur */}
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={togglePlay}
+              className="w-16 h-16 rounded-full bg-gradient-to-br from-safran to-henne text-white flex items-center justify-center shadow-[0_12px_30px_rgba(232,149,40,0.4)] transition-transform active:scale-95 cursor-pointer flex-shrink-0"
+            >
+              {isPlaying ? <Pause size={26} fill="currentColor" /> : <Play size={26} fill="currentColor" className="ml-1" />}
+            </button>
 
-          {/* Égaliseur animé */}
-          <div className="flex items-end gap-1 h-8">
-            {EQ_BARS.map((i) => (
-              <span
-                key={i}
-                className={`w-1 rounded-full bg-safran/80 ${isPlaying ? "animate-equalize" : ""}`}
-                style={{ height: "100%", animationDelay: `${i * 0.12}s`, transform: isPlaying ? undefined : "scaleY(0.3)", transformOrigin: "bottom" }}
-              />
-            ))}
+            <div className="flex items-end gap-1 h-8">
+              {EQ_BARS.map((i) => (
+                <span
+                  key={i}
+                  className={`w-1 rounded-full bg-safran/80 ${isPlaying ? "animate-equalize" : ""}`}
+                  style={{ height: "100%", animationDelay: `${i * 0.12}s`, transform: isPlaying ? undefined : "scaleY(0.3)", transformOrigin: "bottom" }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
 
-        <p className="text-xs text-white/50 mt-5 font-medium">
-          {isPlaying ? "Lecture en cours…" : song.isFull ? "Appuyez pour écouter la chanson complète" : "Appuyez pour écouter"}
-        </p>
+          <p className="text-xs text-white/50 mt-5 font-medium text-center">
+            {isPlaying ? "Lecture en cours…" : song.isFull ? "Appuyez pour écouter la chanson complète" : "Appuyez pour écouter"}
+          </p>
+        </div>
       </div>
 
       {/* Note discrète en bas (remplace la barre du haut) */}
