@@ -137,7 +137,9 @@ export default function PublicSong() {
                 <Sparkles size={12} /> Une surprise rien que pour vous
               </p>
               <h1 className="font-display text-2xl sm:text-3xl font-bold text-white leading-snug">
-                {share.senderName} vous a dédié<br />une chanson
+                {share.title
+                  ? share.title
+                  : <>{share.senderName} vous a dédié<br />une chanson</>}
               </h1>
               {share.message && (
                 <div className="bg-white/5 rounded-2xl p-4 border border-white/10 mt-2">

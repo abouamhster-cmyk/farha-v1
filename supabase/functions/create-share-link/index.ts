@@ -9,7 +9,7 @@ Deno.serve(async (req: Request) => {
     const user = await getAuthedUser(req);
     if (!user) return jsonResponse({ error: "Non authentifié" }, 401);
 
-    const { songId, shareType, senderName, message, photoPath } = await req.json();
+    const { songId, shareType, senderName, message, photoPath, title } = await req.json();
     if (!songId) return jsonResponse({ error: "songId requis" }, 400);
 
     const admin = getSupabaseAdmin();
@@ -38,6 +38,7 @@ Deno.serve(async (req: Request) => {
         sender_name: senderName || null,
         message: message || null,
         photo_path: photoPath || null,
+        title: (title && String(title).trim()) || null,
       })
       .select("id")
       .single();

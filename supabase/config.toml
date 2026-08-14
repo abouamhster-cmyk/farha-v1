@@ -74,3 +74,6 @@ verify_jwt = false  # page publique de partage, appelée à la lecture
 
 [functions.create-variant]
 verify_jwt = false
+
+[functions.save-push-subscription]
+verify_jwt = false

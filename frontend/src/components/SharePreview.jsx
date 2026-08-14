@@ -4,8 +4,11 @@ import { Play, Sparkles, Heart, Gift, Music } from "lucide-react";
 // partage. Deux états, comme la vraie page :
 //   - personalized : la carte de révélation (dédicace du sender)
 //   - direct       : le lecteur immersif (sans titre ni notes)
-export default function SharePreview({ mode, coverUrl, senderName, message, photoPreview }) {
+export default function SharePreview({ mode, coverUrl, senderName, message, photoPreview, title }) {
   const isPerso = mode === "personalized";
+  const displayTitle = (title && title.trim())
+    ? title.trim()
+    : `${senderName?.trim() || "Votre nom"} vous a dédié une chanson`;
 
   return (
     <div className="relative w-full rounded-[26px] overflow-hidden bg-[#0C0F0E] border border-white/10 shadow-2xl">
@@ -36,7 +39,7 @@ export default function SharePreview({ mode, coverUrl, senderName, message, phot
               <Sparkles size={10} /> Une surprise rien que pour vous
             </p>
             <h3 className="font-display text-lg font-bold text-white leading-snug mb-2">
-              {(senderName?.trim() || "Votre nom")} vous a dédié une chanson
+              {displayTitle}
             </h3>
 
             {message?.trim() && (

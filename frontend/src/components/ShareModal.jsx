@@ -2,9 +2,10 @@ import { useState, useRef } from "react";
 import { callFunction } from "../lib/supabaseClient.js";
 import { supabase } from "../lib/supabaseClient.js";
 import SharePreview from "./SharePreview.jsx";
+import { enablePush, pushSupported } from "../lib/push.js";
 import {
   X, Share2, Send, Sparkles, Loader2, Check, Copy,
-  User, MessageSquare, ImagePlus, Link2, Zap, ChevronLeft, Eye
+  User, MessageSquare, ImagePlus, Link2, Zap, ChevronLeft, Eye, Type, Bell, BellRing
 } from "lucide-react";
 
 const SITE_URL = import.meta.env.VITE_SITE_URL || "https://farha-v1.vercel.app";
@@ -17,10 +18,27 @@ export default function ShareModal({ song, coverUrl, onClose }) {
   const [error, setError] = useState("");
 
   const [senderName, setSenderName] = useState("");
+  const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const fileRef = useRef(null);
+
+  // Notifications push (créateur prévenu quand le destinataire écoute)
+  const [pushState, setPushState] = useState("idle"); // idle | enabling | enabled | error
+  const [pushError, setPushError] = useState("");
+
+  async function handleEnablePush() {
+    setPushState("enabling");
+    setPushError("");
+    try {
+      await enablePush();
+      setPushState("enabled");
+    } catch (err) {
+      setPushError(err?.message || "Activation impossible.");
+      setPushState("error");
+    }
+  }
 
   const directUrl = `${SITE_URL}/ecouter/${song.id}`;
 
@@ -70,6 +88,7 @@ export default function ShareModal({ song, coverUrl, onClose }) {
         songId: song.id,
         shareType: "personalized",
         senderName: senderName.trim(),
+        title: title.trim() || null,
         message: message.trim() || null,
         photoPath,
       });
@@ -206,7 +225,7 @@ export default function ShareModal({ song, coverUrl, onClose }) {
               </button>
 
               <div>
-                <label className="block text-[0.68rem] font-bold uppercase tracking-wider text-muted mb-1">De la part de * (apparaît dans le titre)</label>
+                <label className="block text-[0.68rem] font-bold uppercase tracking-wider text-muted mb-1">De la part de *</label>
                 <div className="relative">
                   <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                   <input
@@ -219,6 +238,24 @@ export default function ShareModal({ song, coverUrl, onClose }) {
                     required
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[0.68rem] font-bold uppercase tracking-wider text-muted mb-1">Titre (optionnel)</label>
+                <div className="relative">
+                  <Type size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Ex: Pour la meilleure maman du monde"
+                    className="input-field pl-9 text-sm"
+                    maxLength={120}
+                  />
+                </div>
+                <p className="text-[0.6rem] text-muted mt-0.5">
+                  Vide = « {(senderName.trim() || "Votre nom")} vous a dédié une chanson »
+                </p>
               </div>
 
               <div>
@@ -267,7 +304,7 @@ export default function ShareModal({ song, coverUrl, onClose }) {
 
             <div className="order-1 md:order-2 md:sticky md:top-0">
               <p className="text-[0.65rem] font-bold uppercase tracking-wider text-muted mb-2 flex items-center gap-1.5"><Eye size={12} /> Aperçu en direct</p>
-              <SharePreview mode="personalized" coverUrl={coverUrl} senderName={senderName} message={message} photoPreview={photoPreview} />
+              <SharePreview mode="personalized" coverUrl={coverUrl} senderName={senderName} title={title} message={message} photoPreview={photoPreview} />
             </div>
           </div>
         )}
@@ -299,6 +336,36 @@ export default function ShareModal({ song, coverUrl, onClose }) {
                 </button>
               )}
             </div>
+
+            {/* Notification push : être prévenu quand le destinataire écoute */}
+            {pushSupported() && (
+              <div className="bg-safran/5 border border-safran/25 rounded-2xl p-4">
+                {pushState === "enabled" ? (
+                  <div className="flex items-center gap-2.5 text-sm font-bold text-emerald">
+                    <BellRing size={18} /> Notifications activées — vous serez prévenu à l'écoute.
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-start gap-2.5 mb-3">
+                      <Bell size={18} className="text-safran flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-muted leading-relaxed">
+                        Soyez <strong className="text-ink">prévenu instantanément</strong> (notification sur votre téléphone, même verrouillé) quand le destinataire écoute la chanson.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleEnablePush}
+                      disabled={pushState === "enabling"}
+                      className="w-full py-2.5 rounded-xl bg-safran hover:bg-safran-bright text-ink text-sm font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                    >
+                      {pushState === "enabling"
+                        ? <><Loader2 size={15} className="animate-spin" /> Activation…</>
+                        : <><Bell size={15} /> Activer les notifications</>}
+                    </button>
+                    {pushState === "error" && <p className="text-xs text-henne mt-2">{pushError}</p>}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

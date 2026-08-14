@@ -6,8 +6,48 @@
 // pour ne pas spammer.
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { getSupabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import webpush from "npm:web-push@3.6.7";
 
 const NOTIFY_THROTTLE_MS = 24 * 60 * 60 * 1000; // 24h
+
+// Envoie une notification Web Push (systeme, meme telephone verrouille)
+// a tous les appareils abonnes du createur.
+async function sendPushToOwner(admin: any, userId: string, title: string, body: string, url: string) {
+  const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY");
+  const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY");
+  const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:contact@farha.app";
+  if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
+    console.warn("Clés VAPID absentes : push non envoyé");
+    return;
+  }
+
+  const { data: subs } = await admin
+    .from("push_subscriptions")
+    .select("id, endpoint, p256dh, auth")
+    .eq("user_id", userId);
+
+  if (!subs || subs.length === 0) return;
+
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+  const payload = JSON.stringify({ title, body, url });
+
+  for (const s of subs) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+        payload
+      );
+    } catch (err: any) {
+      const code = err?.statusCode;
+      // Abonnement expiré / invalide -> on le supprime
+      if (code === 404 || code === 410) {
+        await admin.from("push_subscriptions").delete().eq("id", s.id);
+      } else {
+        console.error("web push error:", code, err?.body || err?.message);
+      }
+    }
+  }
+}
 
 async function sendListenEmail(toEmail: string, listenerLabel: string, songTitle: string) {
   const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
@@ -117,13 +157,24 @@ Deno.serve(async (req: Request) => {
     }
 
     if (shouldNotify) {
+      const listenerLabel = share.sender_name
+        ? `Le destinataire de ${share.sender_name}`
+        : (song.recipient_name || "Quelqu'un");
+      const songTitle = song.occasion || "votre chanson";
+
+      // 1. Notification push systeme (meme telephone verrouille)
+      await sendPushToOwner(
+        admin,
+        song.user_id,
+        "🎧 Votre chanson vient d'être écoutée",
+        `${listenerLabel} écoute « ${songTitle} » que vous avez partagée.`,
+        "https://farha-v1.vercel.app/tableau-de-bord"
+      );
+
+      // 2. Email de secours (Brevo)
       const { data: authUser } = await admin.auth.admin.getUserById(song.user_id);
       const ownerEmail = authUser?.user?.email;
       if (ownerEmail) {
-        const listenerLabel = share.sender_name
-          ? `Le destinataire de ${share.sender_name}`
-          : (song.recipient_name || "Quelqu'un");
-        const songTitle = song.occasion || "votre chanson";
         await sendListenEmail(ownerEmail, listenerLabel, songTitle);
       }
     }

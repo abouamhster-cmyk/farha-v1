@@ -16,7 +16,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: share, error } = await admin
       .from("share_links")
-      .select("id, song_id, share_type, sender_name, message, photo_path, created_at")
+      .select("id, song_id, share_type, sender_name, message, photo_path, title, created_at")
       .eq("id", shareId)
       .single();
 
@@ -39,6 +39,7 @@ Deno.serve(async (req: Request) => {
         shareType: share.share_type,
         senderName: share.sender_name,
         message: share.message,
+        title: share.title,
         photoUrl,
         createdAt: share.created_at,
       },
