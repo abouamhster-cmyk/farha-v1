@@ -359,12 +359,20 @@ export default function SongDetail() {
               <User size={13} className="text-emerald" /> {song.recipient_name}
             </span>
           )}
-          <span className="inline-flex items-center gap-1.5 bg-cream px-2.5 py-1.5 rounded-xl border border-line capitalize">
-            <Globe size={13} className="text-emerald" /> {song.dialect}
-          </span>
-          <span className="inline-flex items-center gap-1.5 bg-cream px-2.5 py-1.5 rounded-xl border border-line capitalize">
-            <Music size={13} className="text-emerald" /> {song.music_style}
-          </span>
+          {song.free_mode ? (
+            <span className="inline-flex items-center gap-1.5 bg-safran/10 text-safran px-2.5 py-1.5 rounded-xl border border-safran/25 font-semibold">
+              <Sparkles size={13} /> Sur mesure
+            </span>
+          ) : (
+            <>
+              <span className="inline-flex items-center gap-1.5 bg-cream px-2.5 py-1.5 rounded-xl border border-line capitalize">
+                <Globe size={13} className="text-emerald" /> {song.dialect}
+              </span>
+              <span className="inline-flex items-center gap-1.5 bg-cream px-2.5 py-1.5 rounded-xl border border-line capitalize">
+                <Music size={13} className="text-emerald" /> {song.music_style}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -429,7 +437,9 @@ export default function SongDetail() {
                     </h3>
                     <p className="text-[0.65rem] sm:text-xs text-white/60 uppercase tracking-wider font-semibold">
                       {song.recipient_name ? `${song.recipient_name} · ` : ""}
-                      <span className="capitalize">{song.music_style}</span> ({song.dialect})
+                      {song.free_mode
+                        ? "Sur mesure"
+                        : <><span className="capitalize">{song.music_style}</span> ({song.dialect})</>}
                     </p>
 
                     {isUnlocked && (

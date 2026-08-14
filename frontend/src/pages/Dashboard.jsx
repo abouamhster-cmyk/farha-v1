@@ -487,7 +487,9 @@ export default function Dashboard() {
 
                       <p className="text-muted text-xs sm:text-sm mb-4">
                         {song.recipient_name ? `Sujet : ${song.recipient_name} · ` : ""}
-                        <span className="capitalize">{song.dialect}</span> · <span className="capitalize">{song.music_style}</span>
+                        {song.free_mode
+                          ? <span className="font-semibold text-safran">Sur mesure</span>
+                          : <><span className="capitalize">{song.dialect}</span> · <span className="capitalize">{song.music_style}</span></>}
                       </p>
                     </div>
 

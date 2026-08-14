@@ -266,7 +266,17 @@ Deno.serve(async (req: Request) => {
 
     if (updateErr) throw updateErr;
 
-    return jsonResponse({ song: updated });
+    // Best-effort : marque le mode libre pour un affichage coherent.
+    // Fait a part et sans throw : si la colonne free_mode n'existe pas
+    // encore (migration 0017 non appliquee), la generation reste OK.
+    const { data: withFlag } = await admin
+      .from("songs")
+      .update({ free_mode: !!freeMode })
+      .eq("id", songId)
+      .select()
+      .maybeSingle();
+
+    return jsonResponse({ song: withFlag ?? updated });
   } catch (err) {
     console.error("Lyrics generation error:", err);
     return jsonResponse({ error: (err as Error).message }, 500);
