@@ -31,6 +31,7 @@ export default {
         micPulse: { "0%, 100%": { transform: "scale(1)" }, "50%": { transform: "scale(1.15)" } },
         successCheck: { "0%": { strokeDashoffset: "50" }, "100%": { strokeDashoffset: "0" } },
         confettiBurst: { "0%": { opacity: "1", transform: "translateY(0) scale(1)" }, "100%": { opacity: "0", transform: "translateY(-60px) scale(0.5)" } },
+        pageEnter: { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "translateY(0)" } },
       },
       animation: {
         fadeIn: "fadeIn 0.2s ease-out",
@@ -45,6 +46,7 @@ export default {
         micPulse: "micPulse 1s ease-in-out infinite",
         successCheck: "successCheck 0.6s ease-out forwards",
         confettiBurst: "confettiBurst 0.8s ease-out forwards",
+        pageEnter: "pageEnter 0.32s cubic-bezier(0.22, 1, 0.36, 1)",
       },
     },
   },

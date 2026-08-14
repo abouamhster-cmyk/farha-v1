@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { supabase, callFunction } from "../lib/supabaseClient.js";
+import { getCachedSongs, setCachedSongs } from "../lib/songCache.js";
 import {
   Music, Disc3, CheckCircle2, Clock, Pen, FileText, Headphones,
   AlertTriangle, Loader2, PlusCircle, Sparkles, Mic2,
@@ -35,8 +36,11 @@ function getOccasionIcon(occasion) {
 
 export default function Dashboard() {
   const { user, profile, refreshProfile } = useAuth();
-  const [songs, setSongs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Affichage instantane depuis le cache local, puis rafraichissement
+  // en arriere-plan (stale-while-revalidate).
+  const cachedSongs = getCachedSongs(user?.id);
+  const [songs, setSongs] = useState(cachedSongs ?? []);
+  const [loading, setLoading] = useState(!cachedSongs);
   const [searchParams] = useSearchParams();
 
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -59,7 +63,12 @@ export default function Dashboard() {
       .range(from, to);
     const results = data ?? [];
     setHasMore(results.length === PAGE_SIZE);
-    setSongs(prev => append ? [...prev, ...results] : results);
+    setSongs(prev => {
+      const next = append ? [...prev, ...results] : results;
+      // On ne met en cache que la premiere page (liste recente)
+      if (!append) setCachedSongs(user?.id, results);
+      return next;
+    });
     setLoading(false);
   }
 

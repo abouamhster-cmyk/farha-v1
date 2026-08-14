@@ -42,3 +42,37 @@ export function clearDraft() {
     // silencieux
   }
 }
+
+// -------------------------------------------------------------------
+// Cache "stale-while-revalidate" de la liste des chansons du tableau
+// de bord : on affiche instantanement la derniere liste connue, puis
+// on rafraichit en arriere-plan. Evite le spinner a chaque visite.
+// -------------------------------------------------------------------
+
+const LIST_KEY_PREFIX = "farha_songs_list_";
+
+export function getCachedSongs(userId) {
+  if (!userId) return null;
+  try {
+    const raw = localStorage.getItem(LIST_KEY_PREFIX + userId);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    // On garde le cache 24h max pour ne pas afficher des donnees trop vieilles
+    if (Date.now() - data.savedAt > 24 * 60 * 60 * 1000) return null;
+    return Array.isArray(data.songs) ? data.songs : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+export function setCachedSongs(userId, songs) {
+  if (!userId) return;
+  try {
+    localStorage.setItem(
+      LIST_KEY_PREFIX + userId,
+      JSON.stringify({ songs, savedAt: Date.now() })
+    );
+  } catch (e) {
+    // silencieux (quota depasse, mode prive, etc.)
+  }
+}
