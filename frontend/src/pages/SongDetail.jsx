@@ -611,10 +611,10 @@ export default function SongDetail() {
         </div>
 
         {/* COLONNE DROITE : PAROLES */}
-        <div className="lg:col-span-7 flex flex-col h-full">
+        <div className="lg:col-span-7">
           {song.lyrics ? (
-            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm flex flex-col h-full animate-slideUp" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
-              <div className="flex items-center justify-between border-b border-line pb-3 sm:pb-4 mb-4 flex-shrink-0 flex-wrap gap-2">
+            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm animate-slideUp" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
+              <div className="flex items-center justify-between border-b border-line pb-3 sm:pb-4 mb-4 flex-wrap gap-2">
                 <h2 className="font-display text-base sm:text-lg lg:text-xl font-bold">Paroles</h2>
 
                 <div className="flex bg-cream p-1 rounded-xl border border-line text-xs font-bold">
@@ -639,7 +639,7 @@ export default function SongDetail() {
                 </div>
               </div>
 
-              <div className="bg-cream rounded-2xl p-4 sm:p-6 border border-line/60 overflow-y-auto flex-1 max-h-[400px] sm:max-h-[460px] lg:max-h-[520px]">
+              <div className="bg-cream rounded-2xl p-4 sm:p-6 border border-line/60 overflow-y-auto max-h-[65vh]">
                 {activeLyricsTab === "darija" ? (
                   <p className="font-arabic text-right text-base sm:text-lg lg:text-2xl leading-loose whitespace-pre-wrap" dir="rtl">
                     {song.lyrics}
@@ -652,7 +652,7 @@ export default function SongDetail() {
               </div>
             </div>
           ) : (
-            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-8 text-center text-muted text-sm flex-1 flex items-center justify-center">
+            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-8 text-center text-muted text-sm flex items-center justify-center min-h-[200px]">
               Aucune parole enregistrée pour ce morceau.
             </div>
           )}
