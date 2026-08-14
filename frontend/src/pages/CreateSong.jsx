@@ -1,13 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { supabase, callFunction } from "../lib/supabaseClient.js";
 import { saveDraft, loadDraft, clearDraft } from "../lib/songCache.js";
 import ProgressCircle from "../components/ProgressCircle.jsx";
+import ConfirmModal from "../components/ConfirmModal.jsx";
 import {
   ArrowRight, Loader2, RefreshCw, Check, Music, User,
-  Globe, ChevronLeft, AlertTriangle, Save, Wifi, WifiOff, Sparkles, Video, Store, Laugh, PartyPopper, Lightbulb, Mic, Mic2, Users, Baby, CheckCircle2, ChevronDown, FileText, Headphones
+  Globe, ChevronLeft, AlertTriangle, Save, Wifi, WifiOff, Sparkles, Video, Store, Laugh, PartyPopper, Lightbulb, Mic, Mic2, Users, Baby, CheckCircle2, ChevronDown, FileText, Headphones, History, RotateCcw
 } from "lucide-react";
+
+// Etape maximale atteignable pour une chanson donnee, deduite de son etat.
+// 1 = idee, 2 = paroles, 3 = musique. On peut TOUJOURS revenir a une
+// etape <= maxStep, mais jamais sauter en avant une etape non atteinte.
+function computeMaxStep(song) {
+  if (!song) return 1;
+  const hasMusic = ["music_generating", "preview_ready", "purchased", "completed"].includes(song.status);
+  if (hasMusic) return 3;
+  if (song.lyrics || song.status === "lyrics_ready") return 2;
+  return 1;
+}
 
 const DIALECTS = [
   { value: "marocain", label: "Darija marocaine (المغربية)" },
@@ -178,16 +190,26 @@ const STEP_LABELS = ["L'idée", "Paroles", "Musique"];
 export default function CreateSong() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const loadSongId = searchParams.get("song");
+  const requestedStep = parseInt(searchParams.get("step") || "", 10);
+
   const [step, setStep] = useState(1);
+  const [maxStep, setMaxStep] = useState(1);
   const [songId, setSongId] = useState(null);
+  const [songHasMusic, setSongHasMusic] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingSong, setLoadingSong] = useState(!!loadSongId);
   const [regeneratingLyrics, setRegeneratingLyrics] = useState(false);
   const [composing, setComposing] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   const [translating, setTranslating] = useState(false);
   const [templateAppliedNotice, setTemplateAppliedNotice] = useState("");
+  const [lyricsHistory, setLyricsHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showRecomposeConfirm, setShowRecomposeConfirm] = useState(false);
   const translateTimer = useRef(null);
   const translateAbort = useRef(null);
 
@@ -218,7 +240,56 @@ export default function CreateSong() {
     };
   }, []);
 
+  // Chargement d'une chanson existante (reprise de brouillon, ou retour
+  // depuis la page musique pour modifier paroles/idee). Prioritaire sur
+  // le brouillon localStorage.
   useEffect(() => {
+    if (!loadSongId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error: loadErr } = await supabase
+        .from("songs")
+        .select("*")
+        .eq("id", loadSongId)
+        .single();
+      if (cancelled) return;
+      if (loadErr || !data) {
+        setError("Chanson introuvable.");
+        setLoadingSong(false);
+        return;
+      }
+      setSongId(data.id);
+      setForm({
+        dialect: data.dialect,
+        music_style: data.music_style,
+        voice_type: data.voice_type || "homme",
+        recipient_name: data.recipient_name || "",
+        occasion: data.occasion || "TikTok / Reels",
+        brief: data.brief || "",
+      });
+      setLyrics(data.lyrics || "");
+      setLyricsFr(data.lyrics_fr || "");
+      setTranslatedLyrics(data.lyrics_fr || "");
+      setLyricsVersion(data.lyrics_version || 0);
+      setLyricsHistory(Array.isArray(data.lyrics_history) ? data.lyrics_history : []);
+
+      const reachable = computeMaxStep(data);
+      setMaxStep(reachable);
+      setSongHasMusic(reachable === 3);
+
+      // Etape de depart : celle demandee (?step=) si atteignable, sinon
+      // l'etape la plus avancee possible sans depasser la musique.
+      let startStep = 1;
+      if (requestedStep >= 1 && requestedStep <= reachable) startStep = requestedStep;
+      else startStep = Math.min(reachable, 2); // par defaut on ouvre sur les paroles si dispo
+      setStep(startStep);
+      setLoadingSong(false);
+    })();
+    return () => { cancelled = true; };
+  }, [loadSongId]);
+
+  useEffect(() => {
+    if (loadSongId) return; // pas de restauration localStorage si on ouvre une chanson precise
     const draft = loadDraft();
     if (draft) {
       if (draft.form) setForm(draft.form);
@@ -226,12 +297,13 @@ export default function CreateSong() {
       if (draft.lyrics) setLyrics(draft.lyrics);
       if (draft.lyricsFr) { setLyricsFr(draft.lyricsFr); setTranslatedLyrics(draft.lyricsFr); }
       if (draft.lyricsVersion) setLyricsVersion(draft.lyricsVersion);
-      if (draft.step) setStep(draft.step);
+      if (draft.step) { setStep(draft.step); setMaxStep(Math.max(draft.step, draft.lyrics ? 2 : 1)); }
+      if (draft.lyrics) setMaxStep((m) => Math.max(m, 2));
       if (draft.activeTab) setActiveTab(draft.activeTab);
       setDraftRestored(true);
       setTimeout(() => setDraftRestored(false), 4000);
     }
-  }, []);
+  }, [loadSongId]);
 
   useEffect(() => {
     saveDraft({ form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab });
@@ -395,6 +467,8 @@ export default function CreateSong() {
       if (translationLang === "fr") setTranslatedLyrics(song.lyrics_fr ?? "");
       else if (song.lyrics) translateLyrics("darija", song.lyrics, form.dialect, translationLang);
       setLyricsVersion(song.lyrics_version);
+      setLyricsHistory(Array.isArray(song.lyrics_history) ? song.lyrics_history : []);
+      setMaxStep((m) => Math.max(m, 2));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -403,7 +477,40 @@ export default function CreateSong() {
     }
   }
 
-  async function handleValidateLyrics() {
+  // Navigation libre entre les etapes deja atteintes. L'etape 3 (musique)
+  // vit sur la page dediee de la chanson.
+  function goToStep(target) {
+    if (target > maxStep) return;
+    setError("");
+    if (target === 3) {
+      if (songId) navigate(`/chanson/${songId}`);
+      return;
+    }
+    setStep(target);
+  }
+
+  // Restaure une version precedente des paroles (gratuit, non destructif :
+  // regenerer plus tard reempilera de toute facon l'historique).
+  function restoreLyricsVersion(entry) {
+    setLyrics(entry.lyrics || "");
+    setLyricsFr(entry.lyrics_fr || "");
+    setTranslatedLyrics(entry.lyrics_fr || "");
+    setActiveTab("darija");
+    setShowHistory(false);
+  }
+
+  function handleValidateLyrics() {
+    // Si la chanson a deja une musique, recomposer coute 1 credit et
+    // remplace la musique existante -> on confirme d'abord.
+    if (songHasMusic) {
+      setShowRecomposeConfirm(true);
+      return;
+    }
+    doComposeMusic();
+  }
+
+  async function doComposeMusic() {
+    setShowRecomposeConfirm(false);
     setError("");
     setLoading(true);
     setComposing(true);
@@ -427,6 +534,15 @@ export default function CreateSong() {
 
   const hasExistingLyrics = !!(lyrics || lyricsFr);
 
+  if (loadingSong) {
+    return (
+      <div className="px-4 py-24 flex flex-col items-center justify-center gap-3">
+        <Loader2 size={30} className="text-safran animate-spin" />
+        <p className="text-sm font-semibold text-muted">Chargement de votre projet…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-5xl mx-auto">
 
@@ -442,25 +558,43 @@ export default function CreateSong() {
         </div>
       )}
 
-      {/* Stepper avec icones et animations */}
+      {/* Stepper cliquable : on peut revenir a toute etape deja atteinte */}
       <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-3 sm:p-5 mb-6 sm:mb-8 shadow-sm flex items-center justify-between">
         {STEP_LABELS.map((label, i) => {
           const StepIcon = STEP_ICONS[i];
-          const done = step > i + 1;
-          const active = step === i + 1;
+          const target = i + 1;
+          const done = step > target;
+          const active = step === target;
+          const reachable = target <= maxStep && !loading && !composing && !regeneratingLyrics;
+          const clickable = reachable && !active;
           return (
             <div key={label} className="flex items-center gap-2 sm:gap-3 flex-1 justify-center">
-              <span className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all duration-300 ${
-                done ? "bg-emerald text-white animate-popIn" : active ? "bg-safran text-ink shadow-sm font-bold" : "bg-line text-muted"
-              }`}>
-                {done ? <Check size={16} /> : <StepIcon size={16} />}
-              </span>
-              <span className={`text-xs sm:text-sm font-semibold hidden sm:inline transition-colors ${active ? "text-ink font-bold" : "text-muted"}`}>{label}</span>
+              <button
+                type="button"
+                onClick={() => clickable && goToStep(target)}
+                disabled={!clickable}
+                title={clickable ? `Aller à : ${label}` : undefined}
+                className={`flex items-center gap-2 sm:gap-3 rounded-full transition-all ${clickable ? "cursor-pointer hover:opacity-80 active:scale-95" : "cursor-default"}`}
+              >
+                <span className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all duration-300 ${
+                  done ? "bg-emerald text-white" : active ? "bg-safran text-ink shadow-sm font-bold ring-2 ring-safran/30" : reachable ? "bg-emerald/15 text-emerald" : "bg-line text-muted"
+                }`}>
+                  {done ? <Check size={16} /> : <StepIcon size={16} />}
+                </span>
+                <span className={`text-xs sm:text-sm font-semibold hidden sm:inline transition-colors ${active ? "text-ink font-bold" : reachable ? "text-emerald" : "text-muted"}`}>{label}</span>
+              </button>
               {i < 2 && <span className="hidden md:block w-8 lg:w-12 h-px bg-line ml-2 sm:ml-3" />}
             </div>
           );
         })}
       </div>
+
+      {maxStep > 1 && (
+        <p className="-mt-4 sm:-mt-6 mb-6 text-center text-[0.7rem] sm:text-xs text-muted flex items-center justify-center gap-1.5">
+          <RotateCcw size={12} className="text-emerald" />
+          Astuce : cliquez sur une étape déjà franchie pour y revenir et ajuster.
+        </p>
+      )}
 
       {error && (
         <div className="bg-henne/10 text-henne rounded-2xl px-4 py-3 sm:py-4 mb-6 text-xs sm:text-sm flex items-center justify-between gap-3 border border-henne/20 animate-slideDown">
@@ -702,6 +836,43 @@ export default function CreateSong() {
                 </>
               )}
 
+              {/* Historique GRATUIT des paroles : revenir a une version precedente */}
+              {lyricsHistory.length > 0 && !regeneratingLyrics && (
+                <div className="border border-line rounded-2xl overflow-hidden">
+                  <button
+                    onClick={() => setShowHistory((v) => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-sm font-bold text-emerald hover:bg-cream transition-colors cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <History size={16} className="text-safran" />
+                      Versions précédentes des paroles ({lyricsHistory.length})
+                    </span>
+                    <ChevronDown size={16} className={`transition-transform ${showHistory ? "rotate-180" : ""}`} />
+                  </button>
+                  {showHistory && (
+                    <div className="border-t border-line divide-y divide-line max-h-64 overflow-y-auto">
+                      {[...lyricsHistory].reverse().map((entry, idx) => {
+                        const preview = (entry.lyrics || "").split("\n").filter((l) => l.trim()).slice(0, 2).join(" · ");
+                        return (
+                          <div key={idx} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-cream/60 transition-colors">
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-ink">Version {entry.version ?? "?"}</div>
+                              <div className="text-[0.7rem] text-muted font-arabic text-right truncate" dir="rtl">{preview || "—"}</div>
+                            </div>
+                            <button
+                              onClick={() => restoreLyricsVersion(entry)}
+                              className="flex items-center gap-1.5 text-xs font-bold text-emerald bg-emerald/10 hover:bg-emerald/20 border border-emerald/20 px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex-shrink-0 active:scale-[0.97]"
+                            >
+                              <RotateCcw size={12} /> Restaurer
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-3">
                 <button
                   onClick={() => handleGenerateLyrics()}
@@ -717,13 +888,27 @@ export default function CreateSong() {
                   disabled={loading || regeneratingLyrics || !online}
                   className="flex-1 flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold py-3 sm:py-3.5 rounded-xl shadow-md transition-all text-sm sm:text-base cursor-pointer active:scale-[0.98]"
                 >
-                  <Mic2 size={16} /> Valider et Composer <ArrowRight size={16} />
+                  <Mic2 size={16} />
+                  {songHasMusic ? "Recomposer la musique" : "Valider et Composer"}
+                  <ArrowRight size={16} />
                 </button>
               </div>
             </>
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={showRecomposeConfirm}
+        onCancel={() => setShowRecomposeConfirm(false)}
+        onConfirm={doComposeMusic}
+        title="Recomposer la musique ?"
+        confirmLabel="Recomposer (1 crédit)"
+        confirmColor="bg-henne hover:bg-henne-light"
+      >
+        <p>Cette chanson a déjà une musique. Recomposer va <strong>remplacer</strong> la musique actuelle par une nouvelle version basée sur les paroles ci-dessus, et consommera <strong>1 crédit</strong>.</p>
+        <p className="mt-2 text-xs">Astuce : bientôt, vous pourrez plutôt créer une <strong>variante</strong> qui garde l'originale intacte.</p>
+      </ConfirmModal>
     </div>
   );
 }

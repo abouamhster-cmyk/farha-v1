@@ -205,12 +205,28 @@ Deno.serve(async (req: Request) => {
       throw new Error("Paroles incomplètes. Veuillez réessayer.");
     }
 
+    // Historique GRATUIT : on empile les paroles precedentes avant de les
+    // remplacer, pour pouvoir revenir en arriere. On plafonne a 10 entrees.
+    const priorHistory = Array.isArray(song.lyrics_history) ? song.lyrics_history : [];
+    const nextHistory = song.lyrics
+      ? [
+          ...priorHistory,
+          {
+            lyrics: song.lyrics,
+            lyrics_fr: song.lyrics_fr ?? null,
+            version: song.lyrics_version,
+            saved_at: new Date().toISOString(),
+          },
+        ].slice(-10)
+      : priorHistory;
+
     const { data: updated, error: updateErr } = await admin
       .from("songs")
       .update({
         lyrics: darija,
         lyrics_fr: french,
         lyrics_version: song.lyrics_version + 1,
+        lyrics_history: nextHistory,
         status: "lyrics_ready",
       })
       .eq("id", songId)

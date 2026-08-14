@@ -6,7 +6,7 @@ import ConfirmModal from "../components/ConfirmModal.jsx";
 import ShareModal from "../components/ShareModal.jsx";
 import {
   ChevronLeft, Loader2, Download, Unlock, Music, AlertTriangle,
-  Globe, User, RefreshCw, Play, Pause, Sparkles, Lock, Share2, Check, ShieldCheck, Mic2, Headphones, CheckCircle2
+  Globe, User, RefreshCw, Play, Pause, Sparkles, Lock, Share2, Check, ShieldCheck, Mic2, Headphones, CheckCircle2, FileText, RotateCcw
 } from "lucide-react";
 
 export default function SongDetail() {
@@ -479,6 +479,29 @@ export default function SongDetail() {
               >
                 <RefreshCw size={16} /> Régénérer une autre version (1 crédit)
               </button>
+            </div>
+          )}
+
+          {/* Revenir aux etapes : modifier les paroles ou l'idee de ce projet */}
+          {song.lyrics && (
+            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-muted uppercase tracking-wider">
+                <RotateCcw size={13} className="text-emerald" /> Ajuster ce projet
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <Link
+                  to={`/creer?song=${song.id}&step=2`}
+                  className="flex items-center justify-center gap-1.5 border border-line hover:border-emerald text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs cursor-pointer active:scale-[0.97]"
+                >
+                  <FileText size={14} /> Paroles
+                </Link>
+                <Link
+                  to={`/creer?song=${song.id}&step=1`}
+                  className="flex items-center justify-center gap-1.5 border border-line hover:border-emerald text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs cursor-pointer active:scale-[0.97]"
+                >
+                  <Sparkles size={14} /> L'idée
+                </Link>
+              </div>
             </div>
           )}
         </div>
