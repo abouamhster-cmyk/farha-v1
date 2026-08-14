@@ -1,18 +1,31 @@
 import { useCallback, useEffect, useState, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase, callFunction } from "../lib/supabaseClient.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import ConfirmModal from "../components/ConfirmModal.jsx";
 import ShareModal from "../components/ShareModal.jsx";
 import {
   ChevronLeft, Loader2, Download, Unlock, Music, AlertTriangle,
-  Globe, User, RefreshCw, Play, Pause, Sparkles, Lock, Share2, Check, ShieldCheck, Mic2, Headphones, CheckCircle2, FileText, RotateCcw
+  Globe, User, RefreshCw, Play, Pause, Sparkles, Lock, Share2, Check, ShieldCheck, Mic2, Headphones, CheckCircle2, FileText, RotateCcw, Layers, Plus
 } from "lucide-react";
+
+const VARIANT_STATUS_LABEL = {
+  draft: "Brouillon",
+  lyrics_ready: "Paroles prêtes",
+  music_generating: "Composition…",
+  preview_ready: "Extrait prêt",
+  purchased: "Débloquée",
+  completed: "Complète HD",
+  failed: "Échec",
+};
 
 export default function SongDetail() {
   const { songId } = useParams();
+  const navigate = useNavigate();
   const { profile, refreshProfile } = useAuth();
   const [song, setSong] = useState(null);
+  const [lineage, setLineage] = useState([]);
+  const [creatingVariant, setCreatingVariant] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [coverUrl, setCoverUrl] = useState(null);
   const [error, setError] = useState("");
@@ -41,6 +54,35 @@ export default function SongDetail() {
   }, [songId]);
 
   useEffect(() => { loadSong(); refreshProfile(); }, [loadSong]);
+
+  // Charge la lignée (toutes les versions de la meme famille).
+  useEffect(() => {
+    if (!song) return;
+    const rootId = song.root_song_id || song.id;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("songs")
+        .select("id, occasion, version_number, status, created_at")
+        .or(`root_song_id.eq.${rootId},id.eq.${rootId}`)
+        .order("version_number", { ascending: true });
+      if (!cancelled && data) setLineage(data);
+    })();
+    return () => { cancelled = true; };
+  }, [song?.id, song?.root_song_id, song?.status]);
+
+  async function handleCreateVariant() {
+    if (!song) return;
+    setError("");
+    setCreatingVariant(true);
+    try {
+      const res = await callFunction("create-variant", { songId: song.id, copyLyrics: true });
+      navigate(`/creer?song=${res.songId}&step=${res.startStep || 2}`);
+    } catch (err) {
+      setError(err?.message || String(err));
+      setCreatingVariant(false);
+    }
+  }
 
   useEffect(() => {
     if (!song) return;
@@ -504,6 +546,58 @@ export default function SongDetail() {
               </div>
             </div>
           )}
+
+          {/* Versions : lignée de la chanson (v1, v2, v3…) */}
+          <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-muted uppercase tracking-wider">
+                <Layers size={13} className="text-emerald" /> Versions
+              </div>
+              {lineage.length > 1 && (
+                <span className="text-[0.65rem] font-bold text-emerald bg-emerald/10 px-2 py-0.5 rounded-full border border-emerald/20">
+                  {lineage.length}
+                </span>
+              )}
+            </div>
+
+            {lineage.length > 1 && (
+              <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                {lineage.map((v) => {
+                  const current = v.id === song.id;
+                  return (
+                    <Link
+                      key={v.id}
+                      to={`/chanson/${v.id}`}
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs transition-colors ${
+                        current ? "border-emerald bg-emerald/5 text-ink font-bold" : "border-line hover:border-emerald/40 text-muted"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[0.65rem] font-bold flex-shrink-0 ${current ? "bg-emerald text-white" : "bg-cream text-muted"}`}>
+                          v{v.version_number}
+                        </span>
+                        <span className="truncate">{VARIANT_STATUS_LABEL[v.status] || v.status}</span>
+                      </span>
+                      {current && <Check size={13} className="text-emerald flex-shrink-0" />}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            <button
+              onClick={handleCreateVariant}
+              disabled={creatingVariant || !song.lyrics}
+              className="w-full flex items-center justify-center gap-2 bg-emerald hover:bg-emerald-light text-white font-bold py-2.5 rounded-xl transition-colors text-xs disabled:opacity-50 cursor-pointer active:scale-[0.97]"
+            >
+              {creatingVariant
+                ? <><Loader2 size={14} className="animate-spin" /> Création…</>
+                : <><Plus size={14} /> Créer une nouvelle version</>}
+            </button>
+            <p className="text-[0.65rem] text-muted leading-relaxed">
+              Une nouvelle version repart des mêmes paroles et garde <strong>cette chanson intacte</strong>.
+            </p>
+          </div>
         </div>
 
         {/* COLONNE DROITE : PAROLES */}

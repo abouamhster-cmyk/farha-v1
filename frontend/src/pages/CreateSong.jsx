@@ -210,6 +210,7 @@ export default function CreateSong() {
   const [lyricsHistory, setLyricsHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showRecomposeConfirm, setShowRecomposeConfirm] = useState(false);
+  const [creatingVariant, setCreatingVariant] = useState(false);
   const translateTimer = useRef(null);
   const translateAbort = useRef(null);
 
@@ -509,6 +510,23 @@ export default function CreateSong() {
     doComposeMusic();
   }
 
+  // Cree une nouvelle version (variante) a partir de la chanson courante,
+  // en gardant l'originale intacte. Copie les paroles actuelles.
+  async function handleCreateVariant() {
+    if (!songId) return;
+    setShowRecomposeConfirm(false);
+    setError("");
+    setCreatingVariant(true);
+    try {
+      const res = await callFunction("create-variant", { songId, copyLyrics: true });
+      clearDraft();
+      navigate(`/creer?song=${res.songId}&step=${res.startStep || 2}`);
+    } catch (err) {
+      setError(err.message || String(err));
+      setCreatingVariant(false);
+    }
+  }
+
   async function doComposeMusic() {
     setShowRecomposeConfirm(false);
     setError("");
@@ -534,11 +552,13 @@ export default function CreateSong() {
 
   const hasExistingLyrics = !!(lyrics || lyricsFr);
 
-  if (loadingSong) {
+  if (loadingSong || creatingVariant) {
     return (
       <div className="px-4 py-24 flex flex-col items-center justify-center gap-3">
         <Loader2 size={30} className="text-safran animate-spin" />
-        <p className="text-sm font-semibold text-muted">Chargement de votre projet…</p>
+        <p className="text-sm font-semibold text-muted">
+          {creatingVariant ? "Création de la nouvelle version…" : "Chargement de votre projet…"}
+        </p>
       </div>
     );
   }
@@ -902,12 +922,14 @@ export default function CreateSong() {
         open={showRecomposeConfirm}
         onCancel={() => setShowRecomposeConfirm(false)}
         onConfirm={doComposeMusic}
-        title="Recomposer la musique ?"
-        confirmLabel="Recomposer (1 crédit)"
+        title="Modifier cette chanson"
+        confirmLabel="Remplacer (1 crédit)"
         confirmColor="bg-henne hover:bg-henne-light"
+        primaryAction={{ label: "Créer une nouvelle version (garde l'originale)", onClick: handleCreateVariant, color: "bg-emerald hover:bg-emerald-light" }}
       >
-        <p>Cette chanson a déjà une musique. Recomposer va <strong>remplacer</strong> la musique actuelle par une nouvelle version basée sur les paroles ci-dessus, et consommera <strong>1 crédit</strong>.</p>
-        <p className="mt-2 text-xs">Astuce : bientôt, vous pourrez plutôt créer une <strong>variante</strong> qui garde l'originale intacte.</p>
+        <p>Cette chanson a déjà une musique. Deux options :</p>
+        <p className="mt-2"><strong className="text-emerald">Nouvelle version</strong> (recommandé) : crée une variante à partir de ces paroles et <strong>garde l'originale intacte</strong>. Vous composerez ensuite (1 crédit).</p>
+        <p className="mt-2"><strong className="text-henne">Remplacer</strong> : recompose et <strong>écrase</strong> la musique actuelle. Consomme 1 crédit.</p>
       </ConfirmModal>
     </div>
   );

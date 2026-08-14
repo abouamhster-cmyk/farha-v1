@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 
-export default function ConfirmModal({ open, onConfirm, onCancel, title, children, confirmLabel = "Confirmer", cancelLabel = "Annuler", confirmColor = "bg-henne hover:bg-henne-light" }) {
+export default function ConfirmModal({ open, onConfirm, onCancel, title, children, confirmLabel = "Confirmer", cancelLabel = "Annuler", confirmColor = "bg-henne hover:bg-henne-light", primaryAction = null }) {
   const overlayRef = useRef(null);
 
   useEffect(() => {
@@ -25,6 +25,16 @@ export default function ConfirmModal({ open, onConfirm, onCancel, title, childre
 
         {title && <h3 className="font-display text-lg font-bold mb-3">{title}</h3>}
         <div className="text-sm text-muted leading-relaxed mb-6">{children}</div>
+
+        {/* Action recommandée mise en avant (optionnelle) */}
+        {primaryAction && (
+          <button
+            onClick={primaryAction.onClick}
+            className={`w-full py-3 rounded-xl text-white text-sm font-bold transition-colors mb-3 ${primaryAction.color || "bg-emerald hover:bg-emerald-light"}`}
+          >
+            {primaryAction.label}
+          </button>
+        )}
 
         <div className="flex gap-3">
           <button

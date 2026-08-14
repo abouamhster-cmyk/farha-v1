@@ -119,8 +119,15 @@ export default function Dashboard() {
       });
   }, [searchParams]);
 
-  // LOGIQUE DE FILTRAGE DYNAMIQUE
-  const filteredSongs = songs.filter((song) => {
+  // Brouillons (pas encore composés) vs réalisations (avec musique).
+  const DRAFT_STATUSES = ["draft", "lyrics_ready", "lyrics_generating"];
+  const draftSongs = songs
+    .filter((s) => DRAFT_STATUSES.includes(s.status))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const composedSongs = songs.filter((s) => !DRAFT_STATUSES.includes(s.status));
+
+  // LOGIQUE DE FILTRAGE DYNAMIQUE (sur les réalisations composées)
+  const filteredSongs = composedSongs.filter((song) => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const title = (song.occasion || "").toLowerCase();
@@ -159,6 +166,7 @@ export default function Dashboard() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
   const completedCount = songs.filter(s => s.status === "completed" || s.status === "preview_ready").length;
+  const DRAFT_LABEL = { draft: "Idée", lyrics_generating: "Écriture…", lyrics_ready: "Paroles prêtes" };
 
   return (
     <div className="px-5 sm:px-8 lg:px-12 py-6 lg:py-10 max-w-7xl mx-auto space-y-8">
@@ -252,7 +260,7 @@ export default function Dashboard() {
             <Disc3 size={26} />
           </div>
           <div className="min-w-0">
-            <div className="font-display text-3xl sm:text-4xl font-extrabold text-ink leading-none">{songs.length}</div>
+            <div className="font-display text-3xl sm:text-4xl font-extrabold text-ink leading-none">{composedSongs.length}</div>
             <div className="text-muted text-xs sm:text-sm font-semibold mt-1 truncate">Musiques composées</div>
           </div>
         </div>
@@ -268,8 +276,49 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* BROUILLONS À TERMINER */}
+      {draftSongs.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-lg sm:text-xl font-bold flex items-center gap-2">
+              <Pen size={18} className="text-safran" /> Brouillons à terminer ({draftSongs.length})
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {draftSongs.map((d) => {
+              const OccIcon = getOccasionIcon(d.occasion);
+              return (
+                <Link
+                  key={d.id}
+                  to={`/creer?song=${d.id}`}
+                  className="group bg-safran/5 border border-safran/25 border-dashed hover:border-safran hover:bg-safran/10 rounded-2xl p-4 sm:p-5 transition-all flex items-center gap-3.5 active:scale-[0.99]"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center flex-shrink-0 text-safran border border-safran/20">
+                    <OccIcon size={20} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-sm truncate">{d.occasion || "Nouvelle chanson"}</h3>
+                      <span className="text-[0.6rem] font-bold text-safran bg-safran/15 px-2 py-0.5 rounded-full border border-safran/25 flex-shrink-0">
+                        {DRAFT_LABEL[d.status] || "Brouillon"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted mt-0.5 truncate">
+                      {d.recipient_name ? `${d.recipient_name} · ` : ""}<span className="capitalize">{d.dialect}</span>
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-safran flex items-center gap-1 flex-shrink-0 group-hover:translate-x-0.5 transition-transform">
+                    Reprendre <ChevronRight size={14} />
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* PANNEAU DE RECHERCHE, SÉLECTEURS & FILTRES VECTORIELS */}
-      {songs.length > 0 && (
+      {composedSongs.length > 0 && (
         <div className="bg-white border border-line rounded-3xl p-4 sm:p-6 shadow-sm space-y-4 overflow-hidden">
           <div className="flex flex-col md:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
@@ -361,7 +410,7 @@ export default function Dashboard() {
           <h2 className="font-display text-xl sm:text-2xl font-bold flex items-center gap-2">
             <Music size={22} className="text-safran" /> Vos Réalisations Musicales ({filteredSongs.length})
           </h2>
-          {songs.length > 0 && (
+          {composedSongs.length > 0 && (
             <Link to="/creer" className="text-xs sm:text-sm font-bold text-emerald hover:text-emerald-light transition-colors flex items-center gap-1.5 bg-emerald/10 px-4 py-2 rounded-xl border border-emerald/20">
               <PlusCircle size={16} /> Nouvelle création
             </Link>
@@ -372,14 +421,18 @@ export default function Dashboard() {
           <div className="flex items-center justify-center py-20 bg-white border border-line rounded-3xl">
             <Loader2 size={32} className="text-safran animate-spin" />
           </div>
-        ) : songs.length === 0 ? (
+        ) : composedSongs.length === 0 ? (
           <div className="bg-white border border-line rounded-3xl text-center py-16 px-6 shadow-sm space-y-4">
             <div className="w-16 h-16 rounded-2xl bg-safran/15 flex items-center justify-center mx-auto text-safran shadow-inner">
               <Mic2 size={32} />
             </div>
-            <h3 className="font-display text-2xl font-bold">Pas encore de chanson</h3>
+            <h3 className="font-display text-2xl font-bold">
+              {songs.length === 0 ? "Pas encore de chanson" : "Aucune musique composée"}
+            </h3>
             <p className="text-muted max-w-[480px] mx-auto text-xs sm:text-sm leading-relaxed">
-              Créez votre première chanson pour vos réseaux, vos pubs ou vos fêtes de famille.
+              {draftSongs.length > 0
+                ? "Terminez un de vos brouillons ci-dessus pour composer votre première musique."
+                : "Créez votre première chanson pour vos réseaux, vos pubs ou vos fêtes de famille."}
             </p>
             <Link
               to="/creer"
