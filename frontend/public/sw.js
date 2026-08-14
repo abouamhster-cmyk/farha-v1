@@ -2,6 +2,14 @@
 // Affiche une notification systeme (meme telephone verrouille) quand le
 // serveur envoie un message push (ex: un destinataire ecoute la chanson).
 
+// Prise de contrôle immédiate à l'installation/activation.
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+
+// Handler fetch minimal (réseau direct) : requis par certains navigateurs
+// pour considérer l'app comme installable. On ne met rien en cache ici.
+self.addEventListener("fetch", () => {});
+
 self.addEventListener("push", (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }

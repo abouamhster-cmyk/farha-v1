@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import InstallPrompt from "./InstallPrompt.jsx";
 import {
   Music, LayoutDashboard, PlusCircle, CreditCard, LogOut, Menu, X, ShieldAlert
 } from "lucide-react";
@@ -139,6 +140,8 @@ export default function DashboardLayout({ children }) {
 
         <main className="flex-1 overflow-x-hidden">{children}</main>
       </div>
+
+      <InstallPrompt />
     </div>
   );
 }
