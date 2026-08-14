@@ -12,25 +12,30 @@ const FREE_GENERATIONS_PER_DAY = Number(Deno.env.get("FREE_GENERATIONS_PER_DAY")
 const DEFAULT_FREE_DURATION = 60;
 
 const STYLE_PROMPTS: Record<string, string> = {
-  chaabi: "Traditional and festive Moroccan/Algerian chaabi music. Bendir frame drum, derbouka, traditional percussion, handclaps. Festive party atmosphere, 120 BPM.",
-  rai: "Modern Algerian and Maghrebi Rai music. Synthesizer pads, accordion, club danceable groove, 120 BPM.",
-  rap: "Modern Maghrebi Rap and Trap Darija beat. Heavy deep 808 sub-bass, fast trap hi-hats, autotuned urban vocals, 135 BPM.",
-  pop: "Contemporary Arabic and Maghrebi pop music. Smooth modern production with soft beat, catchy synths, 105 BPM.",
-  acoustique: "Intimate acoustic song. Soft nylon guitar, gentle finger-picking, 80 BPM.",
-  gnawa: "Gnawa fusion music. Guembri bassline, metallic qraqeb castanets, 115 BPM.",
-  oriental: "Classical Arabic oriental and Andalusian music. Rich violin section, oud, qanun, 95 BPM.",
-  mezwed: "Traditional Tunisian mezwed music. Mezwed bagpipe lead, festive wedding-party percussion, 125 BPM.",
-  amazigh: "Amazigh (Berber) traditional music. Bendir drums, collective call-and-response chanting, hypnotic tribal rhythm, 110 BPM.",
-  rnb: "Modern R&B/Afrobeat fusion with Maghrebi influence. Smooth groove, warm bassline, soulful production, 95 BPM.",
+  chaabi: "Authentic Moroccan/Algerian Chaâbi, festive and popular. Bendir and derbouka percussion, ghaita and violin lines, oud, energetic call-and-response handclaps and group backing vocals. Warm live-band wedding-party energy, tight infectious groove, ~120 BPM. Punchy, rich, radio-ready mix.",
+  rai: "Modern Algerian Raï, club-pop. Accordion and synth leads over a driving danceable groove, deep bass, darbouka blended with electronic drums. Emotional, slightly melancholic Phrygian-flavored melodies, powerful expressive lead vocal, huge catchy hook. Polished contemporary production, ~118 BPM.",
+  rap: "Maghrebi trap/rap in Darija. Hard-hitting 808 sub-bass, crisp rolling hi-hats, dark cinematic melodic loop, punchy knocking drums. Confident modern flow, tasteful autotune, hard radio-ready mix, ~140 BPM.",
+  pop: "Contemporary Arabic/Maghrebi pop. Bright synths, warm bass, tight modern drum groove, lush layered vocal harmonies, a big uplifting sing-along chorus. Clean glossy emotional radio production, ~104 BPM.",
+  acoustique: "Intimate acoustic ballad. Soft nylon-guitar fingerpicking, warm string pad, gentle brushed percussion, breathy heartfelt close-miked vocal. Tender, emotional, cinematic, ~76 BPM.",
+  gnawa: "Gnawa fusion. Hypnotic guembri sub-bass line, metallic qraqeb castanets, deep call-and-response chants over a trance groove with modern polish. Spiritual, hypnotic, powerful, ~112 BPM.",
+  oriental: "Classical Arabic/Andalusian oriental. Expressive solo violin and oud, qanun and ney, rich string section, tasteful maqam ornamentation, subtle riqq percussion. Elegant, majestic, deeply emotional, cinematic, ~92 BPM.",
+  mezwed: "Tunisian Mezwed. Mezwed bagpipe and zokra lead, driving wedding-party percussion (darbouka, bendir), festive call-and-response vocals. Hot, danceable, celebratory, ~126 BPM.",
+  amazigh: "Amazigh (Berber) roots. Bendir and allun frame drums, collective ahwash/ahidus call-and-response chanting, hypnotic tribal rhythm with modern polish. Proud, rootsy, uplifting, ~108 BPM.",
+  rnb: "Modern R&B / Afro-fusion with Maghrebi soul. Smooth lush chords, warm sub-bass, laid-back Afrobeat groove, silky expressive lead vocal with rich harmonies. Sensual, emotional, contemporary radio production, ~96 BPM.",
 };
 
 const VOICE_PROMPTS: Record<string, string> = {
-  homme: "Solo male vocals.",
-  femme: "Solo female vocals.",
-  duo: "Duet: male and female vocals alternating/answering each other.",
-  choeurs: "Group choir vocals, several voices singing together.",
-  enfant: "Child's singing voice, innocent and joyful tone.",
+  homme: "Solo male lead vocal, warm and expressive, natural phrasing, emotionally engaged.",
+  femme: "Solo female lead vocal, warm and expressive, natural phrasing, emotionally engaged.",
+  duo: "Male and female duet trading lines in the verses and blending in harmony on the chorus, natural chemistry.",
+  choeurs: "Group/choir vocals, several voices in unison and harmony, big communal sing-along chorus.",
+  enfant: "Child lead vocal, innocent, joyful and tender, natural (never robotic).",
 };
+
+// Directive de production commune : pousse Suno vers un rendu pro,
+// cohérent musicalement et émotionnel (fini le "décalé").
+const PRODUCTION_DIRECTIVE =
+  "PROFESSIONAL PRODUCTION: authentic instrumentation for the genre, cohesive arrangement, clean radio-ready mix. Vocals perfectly in tune and in rhythm with clear, natural, emotional delivery. Keep a single consistent key and tempo throughout; melody and chords must stay musically coherent. Strong, memorable, catchy chorus hook. The song should feel like a real professional track and be genuinely moving.";
 
 function sanitizeForLyria(text: string): string {
   if (!text) return "";
@@ -88,6 +93,8 @@ function buildFallbackPrompt(
 
   return `${stylePrompt} ${voicePrompt}
 
+${PRODUCTION_DIRECTIVE}
+
 Compose a complete original song for a ${theme}. ${nameInfo} ${briefInfo}
 ${lyricsContext}
 Write and sing your own lyrics inspired by the themes above. Sing in Moroccan Darija (Arabic dialect). Be creative, joyful, and authentic. Keep the same spirit and key ideas from the original but use your own words.
@@ -140,6 +147,8 @@ function buildMusicPrompt(stylePrompt: string, voicePrompt: string, lyrics: stri
   const maxDurationFormatted = formatTimestamp(d);
 
   return `${stylePrompt} ${voicePrompt}
+
+${PRODUCTION_DIRECTIVE}
 
 Composition Breakdown & Timestamps:
 

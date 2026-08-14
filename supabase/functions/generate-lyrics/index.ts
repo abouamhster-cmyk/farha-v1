@@ -47,6 +47,16 @@ const VOICE_MAP: Record<string, string> = {
   enfant: "portée par une voix d'enfant au timbre doux et innocent",
 };
 
+// Principes d'ecriture partages — c'est ce qui distingue une vraie
+// chanson qui touche et devient virale d'un texte generique.
+const LYRICS_CRAFT = `PRINCIPES D'ÉCRITURE (essentiels — c'est ce qui rend la chanson vraie, émouvante et virale) :
+- AUTHENTICITÉ : écris dans le VRAI parler du dialecte (expressions, idiomes, tournures du quotidien), pas une traduction rigide ou scolaire. Sers-toi d'images concrètes et sensorielles (lieux, gestes, odeurs, souvenirs précis) plutôt que de généralités.
+- ÉMOTION VRAIE : vise le cœur. Puise des détails spécifiques dans le brief (des moments réels, des surnoms, des anecdotes). Sincérité qui touche — bannis les phrases creuses, les superlatifs vides et les clichés.
+- REFRAIN ACCROCHEUR : un hook simple, mélodique et mémorable, facile à reprendre et à chanter (pensé pour devenir viral). Rime naturelle, rythme qui coule, répétition maligne.
+- MUSICALITÉ : lignes chantables, rythme régulier, rimes naturelles jamais forcées. Chaque ligne doit "sonner" juste à voix haute.
+- COHÉRENCE : un fil narratif clair du début à la fin, un ton constant, fidèle à l'intention et à la personne concernée.
+- INTERDITS ABSOLUS : rien de générique, robotique, "glauque", plaqué ou hors-sujet ; pas de remplissage ; pas de mélange de langues incohérent.`;
+
 function buildPrompt(song: {
   dialect: string;
   music_style: string;
@@ -85,11 +95,9 @@ USAGE / AMBIANCE : ${categoryGuidance}
 ${perspective}
 BRIEF DU CLIENT : "${song.brief}"
 
-QUALITÉ & STRUCTURE :
-- Reste fidèle au brief et à la perspective ci-dessus : c'est le plus important.
-- Paroles fluides, imagées et émotionnelles, adaptées au dialecte du quotidien.
-- Adapte la longueur et le ton au style : un morceau festif (chaâbi, raï) est riche et entraînant ; une berceuse ou une chanson tendre est plus douce, intime et peut être plus courte.
-- Structure claire avec des balises : [Couplet 1], [Refrain] (mémorable, répété), [Couplet 2], [Pont] si pertinent, [Outro]. Plusieurs couplets et un vrai refrain.
+${LYRICS_CRAFT}
+
+STRUCTURE : adapte la longueur et le ton au style (un morceau festif chaâbi/raï est riche et entraînant ; une berceuse ou une chanson tendre est plus douce et intime). Balises claires : [Couplet 1], [Refrain] (mémorable, répété), [Couplet 2], [Pont] si pertinent, [Outro]. Plusieurs couplets et un vrai refrain accrocheur.
 
 FORMAT DE RÉPONSE STRICT (balises exactes) :
 DARIJA:
@@ -123,8 +131,11 @@ ${perspective}
 RÈGLES :
 1. Déduis TOI-MÊME de la demande : la langue / le dialecte, le style musical, le type de voix et le TON. Respecte scrupuleusement tout ce que le client précise. S'il ne précise pas la langue, écris en darija marocaine authentique.
 2. Écris la version principale dans la langue/dialecte demandé (alphabet arabe si c'est un dialecte arabe).
-3. Adapte la longueur et le ton au type de chanson demandé (une berceuse est douce et intime ; un morceau festif est riche et entraînant). Évite les paroles plaquées ou robotiques.
-4. Structure claire avec balises : [Couplet 1], [Refrain] (mémorable), [Couplet 2], [Pont] si pertinent, [Outro].
+3. Adapte la longueur et le ton au type de chanson demandé.
+
+${LYRICS_CRAFT}
+
+STRUCTURE : balises claires — [Couplet 1], [Refrain] (mémorable), [Couplet 2], [Pont] si pertinent, [Outro].
 
 FORMAT DE RÉPONSE STRICT (balises exactes) :
 DARIJA:
