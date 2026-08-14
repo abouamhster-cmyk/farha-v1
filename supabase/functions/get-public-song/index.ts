@@ -29,23 +29,35 @@ Deno.serve(async (req) => {
     const { data: song, error } = await admin
       .from("songs")
       .select(
-        "id, occasion, music_style, dialect, recipient_name, lyrics, preview_audio_path, image_path, status, created_at"
+        "id, user_id, occasion, music_style, dialect, recipient_name, preview_audio_path, full_audio_path, image_path, status, created_at"
       )
       .eq("id", songId)
       .single();
 
     // Statut "draft"/"failed"/en cours de génération : rien à montrer
     // publiquement, on renvoie 404 comme si la chanson n'existait pas.
-    if (error || !song || !["preview_ready", "completed"].includes(song.status)) {
+    if (error || !song || !["preview_ready", "completed", "purchased"].includes(song.status)) {
       return jsonResponse({ error: "Chanson introuvable ou pas encore prête." }, 404);
     }
 
-    let previewUrl: string | null = null;
-    if (song.preview_audio_path) {
+    // On partage la MUSIQUE COMPLÈTE si elle est débloquée (completed /
+    // purchased) — le créateur a payé et choisit de la partager. Sinon,
+    // repli sur l'extrait 30s (chanson pas encore débloquée).
+    const isFull = ["completed", "purchased"].includes(song.status) && !!song.full_audio_path;
+
+    let audioUrl: string | null = null;
+    if (isFull) {
+      const { data } = await admin.storage
+        .from("song-full")
+        .createSignedUrl(song.full_audio_path, PREVIEW_URL_TTL_SECONDS);
+      audioUrl = data?.signedUrl ?? null;
+    }
+    // Repli extrait si pas de complet dispo
+    if (!audioUrl && song.preview_audio_path) {
       const { data } = await admin.storage
         .from("song-previews")
         .createSignedUrl(song.preview_audio_path, PREVIEW_URL_TTL_SECONDS);
-      previewUrl = data?.signedUrl ?? null;
+      audioUrl = data?.signedUrl ?? null;
     }
 
     let coverUrl: string | null = null;
@@ -63,9 +75,11 @@ Deno.serve(async (req) => {
         musicStyle: song.music_style,
         dialect: song.dialect,
         recipientName: song.recipient_name,
-        lyrics: song.lyrics,
         createdAt: song.created_at,
-        previewUrl,
+        audioUrl,
+        // conserve previewUrl pour compat éventuelle, pointe sur le même flux
+        previewUrl: audioUrl,
+        isFull,
         coverUrl,
       },
     });

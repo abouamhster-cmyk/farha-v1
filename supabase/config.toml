@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.admin-ai-suggestions]
 verify_jwt = false
+
+[functions.track-share-listen]
+verify_jwt = false  # page publique de partage, appelée à la lecture
