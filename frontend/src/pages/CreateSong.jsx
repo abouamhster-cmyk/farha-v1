@@ -7,7 +7,7 @@ import ProgressCircle from "../components/ProgressCircle.jsx";
 import ConfirmModal from "../components/ConfirmModal.jsx";
 import {
   ArrowRight, Loader2, RefreshCw, Check, Music, User,
-  Globe, ChevronLeft, AlertTriangle, Save, Wifi, WifiOff, Sparkles, Video, Store, Laugh, PartyPopper, Lightbulb, Mic, Mic2, Users, Baby, CheckCircle2, ChevronDown, FileText, Headphones, History, RotateCcw
+  Globe, ChevronLeft, AlertTriangle, Save, Wifi, WifiOff, Sparkles, Video, Store, Laugh, PartyPopper, Lightbulb, Mic, Mic2, Users, Baby, CheckCircle2, ChevronDown, FileText, Headphones, History, RotateCcw, Upload, Lock, Crown, X
 } from "lucide-react";
 
 // Etape maximale atteignable pour une chanson donnee, deduite de son etat.
@@ -231,6 +231,38 @@ export default function CreateSong() {
   const [activeTab, setActiveTab] = useState("darija");
   // Mode libre : l'utilisateur décrit tout lui-même (aucun preset imposé).
   const [freeMode, setFreeMode] = useState(false);
+
+  // Voie A (premium Pro/VIP) : musique de référence.
+  const [premiumStyle, setPremiumStyle] = useState(false); // droit d'accès
+  const [styleRefFile, setStyleRefFile] = useState(null);
+  const styleRefInput = useRef(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "paid")
+        .in("pack_id", ["pack20", "pack40"])
+        .limit(1);
+      if (!cancelled) setPremiumStyle(!!(data && data.length > 0));
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  function handleStyleRefChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError("L'extrait audio ne doit pas dépasser 10 Mo.");
+      return;
+    }
+    setStyleRefFile(file);
+    setError("");
+  }
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -540,6 +572,22 @@ export default function CreateSong() {
       .update({ lyrics, lyrics_fr: lyricsFr, lyrics_validated_at: new Date().toISOString() })
       .eq("id", songId);
     if (saveErr) { setLoading(false); setComposing(false); return setError(saveErr.message); }
+
+    // VOIE A (premium) : upload de la musique de référence si fournie.
+    // Best-effort : un échec n'empêche pas la composition (style par défaut).
+    if (premiumStyle && styleRefFile) {
+      try {
+        const ext = (styleRefFile.name.split(".").pop() || "mp3").toLowerCase();
+        const path = `${user.id}/${songId}_${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("style-refs")
+          .upload(path, styleRefFile, { upsert: true, contentType: styleRefFile.type || undefined });
+        if (!upErr) {
+          await supabase.from("songs").update({ style_ref_path: path }).eq("id", songId);
+        }
+      } catch { /* on compose quand même avec le style par défaut */ }
+    }
+
     try {
       await callFunction("generate-music", { songId });
       await refreshProfile();
@@ -929,6 +977,53 @@ export default function CreateSong() {
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* VOIE A : musique de référence (premium Pro/VIP) */}
+              {!regeneratingLyrics && (
+                premiumStyle ? (
+                  <div className="border border-safran/30 bg-safran/5 rounded-2xl p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-bold text-safran uppercase tracking-wider">
+                      <Music size={14} /> Musique de référence (optionnel)
+                    </div>
+                    <p className="text-[0.7rem] text-muted leading-relaxed">
+                      Ajoutez un court extrait audio : la composition s'inspirera de <strong>son style</strong> (genre, instruments, ambiance).
+                    </p>
+                    {styleRefFile ? (
+                      <div className="flex items-center gap-2 bg-white rounded-xl border border-line px-3 py-2">
+                        <Music size={15} className="text-emerald flex-shrink-0" />
+                        <span className="text-xs font-semibold text-ink truncate flex-1">{styleRefFile.name}</span>
+                        <button type="button" onClick={() => setStyleRefFile(null)} className="text-muted hover:text-henne cursor-pointer flex-shrink-0">
+                          <X size={15} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => styleRefInput.current?.click()}
+                        className="w-full p-3 rounded-xl border-2 border-dashed border-safran/40 text-muted hover:text-safran hover:border-safran/60 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Upload size={16} /> Choisir un extrait (mp3/m4a, max 10 Mo)
+                      </button>
+                    )}
+                    <input ref={styleRefInput} type="file" accept="audio/*" onChange={handleStyleRefChange} className="hidden" />
+                  </div>
+                ) : (
+                  <div className="border border-line rounded-2xl p-4 flex items-center gap-3 bg-cream/60">
+                    <div className="w-9 h-9 rounded-xl bg-safran/15 text-safran flex items-center justify-center flex-shrink-0">
+                      <Lock size={16} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-ink flex items-center gap-1.5">
+                        <Crown size={12} className="text-safran" /> Composer dans le style d'une musique
+                      </div>
+                      <p className="text-[0.7rem] text-muted mt-0.5">Uploadez un extrait, on compose dans ce style. Débloqué avec <strong>Pro</strong> & <strong>Studio VIP</strong>.</p>
+                    </div>
+                    <button type="button" onClick={() => navigate("/tarifs")} className="text-[0.7rem] font-bold text-safran bg-safran/10 hover:bg-safran/20 border border-safran/30 px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex-shrink-0">
+                      Débloquer
+                    </button>
+                  </div>
+                )
               )}
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-3">

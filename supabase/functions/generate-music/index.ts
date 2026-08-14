@@ -5,6 +5,60 @@ import { getSupabaseAdmin, getAuthedUser } from "../_shared/supabaseAdmin.ts";
 import { generateAndUploadCover } from "../_shared/coverImage.ts";
 import { detectSensitiveTopic, sensitiveTopicMessage } from "../_shared/moderation.ts";
 import { truncateAudioBytes } from "../_shared/audioTruncate.ts";
+import { hasPremiumStyleAccess } from "../_shared/entitlement.ts";
+
+// Modele Gemini multimodal utilise pour "ecouter" l'extrait de reference
+// et en decrire le style musical (Voie A, fonctionnalite premium).
+const STYLE_ANALYSIS_MODEL = "gemini-2.5-flash";
+
+// Convertit des octets en base64 (par blocs pour eviter les stack overflow).
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+// Envoie l'extrait audio a Gemini et renvoie une description de style
+// prete a etre utilisee comme prompt Lyria. null si echec (on retombe
+// alors sur le style choisi/par defaut).
+async function describeStyleFromAudio(geminiKey: string, audioBytes: Uint8Array, mime: string): Promise<string | null> {
+  try {
+    const base64 = bytesToBase64(audioBytes);
+    const instruction = `You are a music producer. Listen to this audio excerpt and describe its STYLE so another AI can compose a NEW song in the same vibe (do NOT transcribe or copy it). In 3-4 concise English sentences, describe: genre and regional flavor, approximate tempo/BPM, main instruments, groove/rhythm, mood, and vocal type. Output ONLY the style description, as production tags.`;
+
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${STYLE_ANALYSIS_MODEL}:generateContent?key=${geminiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: instruction },
+              { inline_data: { mime_type: mime || "audio/mpeg", data: base64 } },
+            ],
+          }],
+          generationConfig: { maxOutputTokens: 400, temperature: 0.4 },
+        }),
+      }
+    );
+
+    if (!resp.ok) {
+      console.warn("describeStyleFromAudio HTTP", resp.status, await resp.text());
+      return null;
+    }
+    const data = await resp.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const cleaned = (text || "").replace(/\*+/g, "").replace(/#+/g, "").trim();
+    return cleaned.length > 20 ? cleaned : null;
+  } catch (err) {
+    console.warn("describeStyleFromAudio exception:", err);
+    return null;
+  }
+}
 
 const PREVIEW_SECONDS = 30;
 const GEMINI_RETRIES = 2;
@@ -397,8 +451,29 @@ Deno.serve(async (req: Request) => {
     const gcpLocation = Deno.env.get("GCP_LOCATION") ?? "us-central1";
     const vertexToken = Deno.env.get("VERTEX_ACCESS_TOKEN");
 
-    const stylePrompt = STYLE_PROMPTS[song.music_style] ?? STYLE_PROMPTS.chaabi;
+    let stylePrompt = STYLE_PROMPTS[song.music_style] ?? STYLE_PROMPTS.chaabi;
     const voicePrompt = VOICE_PROMPTS[song.voice_type] ?? VOICE_PROMPTS.homme;
+
+    // VOIE A (premium Pro/VIP) : si un extrait de reference est attache et
+    // que l'utilisateur y a droit, on remplace le style par la description
+    // du style de l'extrait (analyse par Gemini). Best-effort : tout echec
+    // retombe proprement sur le style choisi.
+    if (song.style_ref_path && geminiKey) {
+      const entitled = await hasPremiumStyleAccess(admin, user.id);
+      if (entitled) {
+        const { data: refFile } = await admin.storage.from("style-refs").download(song.style_ref_path);
+        if (refFile) {
+          const bytes = new Uint8Array(await refFile.arrayBuffer());
+          const mime = (refFile as any).type || "audio/mpeg";
+          const styleDesc = await describeStyleFromAudio(geminiKey, bytes, mime);
+          if (styleDesc) {
+            stylePrompt = `Match this reference style as closely as possible: ${styleDesc}`;
+            console.log("Style de reference applique pour", songId);
+          }
+        }
+      }
+    }
+
     const maxDuration = await getUserMaxDuration(admin, user.id);
     const prompt = buildMusicPrompt(stylePrompt, voicePrompt, song.lyrics, maxDuration);
 
