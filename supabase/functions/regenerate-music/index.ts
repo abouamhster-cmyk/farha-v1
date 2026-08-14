@@ -30,22 +30,27 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Statut invalide pour la régénération." }, 400);
     }
 
-    // Vérifier et consommer 1 crédit
-    const { data: profile } = await admin.from("profiles").select("credits").eq("id", user.id).single();
-    if ((profile?.credits ?? 0) <= 0) {
-      return jsonResponse({ error: "Crédits insuffisants pour régénérer la musique." }, 402);
+    // 1re régénération GRATUITE (pour toujours laisser réessayer), puis 1 crédit.
+    const FREE_REGENS = 1;
+    const regenCount = song.music_regen_count ?? 0;
+    const isFree = regenCount < FREE_REGENS;
+
+    if (!isFree) {
+      const { data: profile } = await admin.from("profiles").select("credits").eq("id", user.id).single();
+      if ((profile?.credits ?? 0) <= 0) {
+        return jsonResponse({ error: "Crédits insuffisants pour régénérer la musique." }, 402);
+      }
+      const { data: consumed, error: rpcErr } = await admin.rpc("consume_profile_credit", { p_user_id: user.id });
+      if (rpcErr || !consumed) {
+        return jsonResponse({ error: "Erreur lors de la consommation du crédit." }, 500);
+      }
     }
 
-    const { data: consumed, error: rpcErr } = await admin.rpc("consume_profile_credit", { p_user_id: user.id });
-    if (rpcErr || !consumed) {
-      return jsonResponse({ error: "Erreur lors de la consommation du crédit." }, 500);
-    }
+    await admin.from("songs").update({ status: "music_generating" }).eq("id", songId);
+    // Best-effort : incrémente le compteur (ignore si colonne absente).
+    await admin.from("songs").update({ music_regen_count: regenCount + 1 }).eq("id", songId);
 
-    await admin.from("songs").update({
-      status: "music_generating",
-    }).eq("id", songId);
-
-    return jsonResponse({ success: true, songId });
+    return jsonResponse({ success: true, songId, free: isFree });
   } catch (err) {
     console.error(err);
     return jsonResponse({ error: (err as Error).message }, 500);

@@ -235,6 +235,7 @@ export default function CreateSong() {
   // Voie A (premium Pro/VIP) : musique de référence.
   const [premiumStyle, setPremiumStyle] = useState(false); // droit d'accès
   const [styleRefFile, setStyleRefFile] = useState(null);
+  const [styleRefMode, setStyleRefMode] = useState("inspire"); // 'inspire' | 'cover'
   const styleRefInput = useRef(null);
 
   useEffect(() => {
@@ -583,7 +584,7 @@ export default function CreateSong() {
           .from("style-refs")
           .upload(path, styleRefFile, { upsert: true, contentType: styleRefFile.type || undefined });
         if (!upErr) {
-          await supabase.from("songs").update({ style_ref_path: path }).eq("id", songId);
+          await supabase.from("songs").update({ style_ref_path: path, style_ref_mode: styleRefMode }).eq("id", songId);
         }
       } catch { /* on compose quand même avec le style par défaut */ }
     }
@@ -990,13 +991,34 @@ export default function CreateSong() {
                       Ajoutez un court extrait audio : la composition s'inspirera de <strong>son style</strong> (genre, instruments, ambiance).
                     </p>
                     {styleRefFile ? (
-                      <div className="flex items-center gap-2 bg-white rounded-xl border border-line px-3 py-2">
-                        <Music size={15} className="text-emerald flex-shrink-0" />
-                        <span className="text-xs font-semibold text-ink truncate flex-1">{styleRefFile.name}</span>
-                        <button type="button" onClick={() => setStyleRefFile(null)} className="text-muted hover:text-henne cursor-pointer flex-shrink-0">
-                          <X size={15} />
-                        </button>
-                      </div>
+                      <>
+                        <div className="flex items-center gap-2 bg-white rounded-xl border border-line px-3 py-2">
+                          <Music size={15} className="text-emerald flex-shrink-0" />
+                          <span className="text-xs font-semibold text-ink truncate flex-1">{styleRefFile.name}</span>
+                          <button type="button" onClick={() => setStyleRefFile(null)} className="text-muted hover:text-henne cursor-pointer flex-shrink-0">
+                            <X size={15} />
+                          </button>
+                        </div>
+                        {/* Choix du mode : s'inspirer vs reprendre */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setStyleRefMode("inspire")}
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${styleRefMode === "inspire" ? "border-safran bg-safran/10 ring-2 ring-safran/25" : "border-line bg-white hover:border-safran/40"}`}
+                          >
+                            <div className="text-xs font-bold text-ink">S'inspirer du style</div>
+                            <div className="text-[0.65rem] text-muted mt-0.5">Nouveau morceau, même ambiance</div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setStyleRefMode("cover")}
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${styleRefMode === "cover" ? "border-safran bg-safran/10 ring-2 ring-safran/25" : "border-line bg-white hover:border-safran/40"}`}
+                          >
+                            <div className="text-xs font-bold text-ink">Reprendre le morceau</div>
+                            <div className="text-[0.65rem] text-muted mt-0.5">Au plus proche de l'extrait</div>
+                          </button>
+                        </div>
+                      </>
                     ) : (
                       <button
                         type="button"

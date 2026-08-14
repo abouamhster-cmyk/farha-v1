@@ -467,8 +467,11 @@ Deno.serve(async (req: Request) => {
           const mime = (refFile as any).type || "audio/mpeg";
           const styleDesc = await describeStyleFromAudio(geminiKey, bytes, mime);
           if (styleDesc) {
-            stylePrompt = `Match this reference style as closely as possible: ${styleDesc}`;
-            console.log("Style de reference applique pour", songId);
+            // Mode 'cover' = au plus proche ; 'inspire' (defaut) = s'en inspirer.
+            stylePrompt = song.style_ref_mode === "cover"
+              ? `Reproduce a song staying as FAITHFUL as possible to this reference: same genre, tempo/BPM, groove, key feel, instrumentation and overall arrangement. ${styleDesc}`
+              : `Take clear inspiration from the STYLE of this reference (same genre, mood and instruments) while composing an original song. ${styleDesc}`;
+            console.log(`Style de reference (${song.style_ref_mode || "inspire"}) applique pour`, songId);
           }
         }
       }
