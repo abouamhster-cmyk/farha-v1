@@ -6,6 +6,7 @@ import { generateAndUploadCover } from "../_shared/coverImage.ts";
 import { detectSensitiveTopic, sensitiveTopicMessage } from "../_shared/moderation.ts";
 import { truncateAudioBytes } from "../_shared/audioTruncate.ts";
 import { hasPremiumStyleAccess } from "../_shared/entitlement.ts";
+import { sunoEnabled, sunoUploadCover } from "../_shared/suno.ts";
 
 // Modele Gemini multimodal utilise pour "ecouter" l'extrait de reference
 // et en decrire le style musical (Voie A, fonctionnalite premium).
@@ -458,21 +459,50 @@ Deno.serve(async (req: Request) => {
     // que l'utilisateur y a droit, on remplace le style par la description
     // du style de l'extrait (analyse par Gemini). Best-effort : tout echec
     // retombe proprement sur le style choisi.
-    if (song.style_ref_path && geminiKey) {
+    if (song.style_ref_path) {
       const entitled = await hasPremiumStyleAccess(admin, user.id);
       if (entitled) {
-        const { data: refFile } = await admin.storage.from("style-refs").download(song.style_ref_path);
-        if (refFile) {
-          const bytes = new Uint8Array(await refFile.arrayBuffer());
-          const mime = (refFile as any).type || "audio/mpeg";
-          const styleDesc = await describeStyleFromAudio(geminiKey, bytes, mime);
-          if (styleDesc) {
-            // Mode 'cover' = au plus proche ; 'inspire' (defaut) = s'en inspirer.
-            stylePrompt = song.style_ref_mode === "cover"
-              ? `Reproduce a song staying as FAITHFUL as possible to this reference: same genre, tempo/BPM, groove, key feel, instrumentation and overall arrangement. ${styleDesc}`
-              : `Take clear inspiration from the STYLE of this reference (same genre, mood and instruments) while composing an original song. ${styleDesc}`;
-            console.log(`Style de reference (${song.style_ref_mode || "inspire"}) applique pour`, songId);
+        // Gemini decrit le style de l'extrait (sert a Lyria ET au champ
+        // style de Suno).
+        let styleDesc = "";
+        if (geminiKey) {
+          const { data: refFile } = await admin.storage.from("style-refs").download(song.style_ref_path);
+          if (refFile) {
+            const bytes = new Uint8Array(await refFile.arrayBuffer());
+            const mime = (refFile as any).type || "audio/mpeg";
+            styleDesc = (await describeStyleFromAudio(geminiKey, bytes, mime)) || "";
           }
+        }
+
+        // VRAIE REPRISE via Suno (audio-conditionne, async) — SEULEMENT si
+        // active (SUNO_ENABLED + cle). Sinon on reste sur Lyria ci-dessous.
+        if (sunoEnabled() && song.style_ref_mode === "cover" && song.lyrics) {
+          try {
+            const { data: signed } = await admin.storage.from("style-refs").createSignedUrl(song.style_ref_path, 3600);
+            if (signed?.signedUrl) {
+              const vg = song.voice_type === "femme" ? "f" : song.voice_type === "homme" ? "m" : undefined;
+              const { taskId } = await sunoUploadCover({
+                uploadUrl: signed.signedUrl,
+                lyrics: song.lyrics,
+                style: styleDesc || (STYLE_PROMPTS[song.music_style] ?? ""),
+                title: (song.occasion || "Farha").slice(0, 70),
+                vocalGender: vg as ("m" | "f" | undefined),
+              });
+              await admin.from("songs").update({ provider_job_id: taskId, music_provider: "suno" }).eq("id", songId);
+              // Async : suno-callback finalisera la chanson (status -> completed).
+              return jsonResponse({ status: "generating", provider: "suno" });
+            }
+          } catch (e) {
+            console.error("Suno cover échec, repli sur Lyria:", e);
+          }
+        }
+
+        // Sinon : on oriente Lyria avec la description du style.
+        if (styleDesc) {
+          stylePrompt = song.style_ref_mode === "cover"
+            ? `Reproduce a song staying as FAITHFUL as possible to this reference: same genre, tempo/BPM, groove, key feel, instrumentation and overall arrangement. ${styleDesc}`
+            : `Take clear inspiration from the STYLE of this reference (same genre, mood and instruments) while composing an original song. ${styleDesc}`;
+          console.log(`Style de reference (${song.style_ref_mode || "inspire"}) applique pour`, songId);
         }
       }
     }

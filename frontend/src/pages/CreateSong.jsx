@@ -187,6 +187,10 @@ const TRANSLATE_DEBOUNCE_MS = 1200;
 const STEP_ICONS = [FileText, Music, Headphones];
 const STEP_LABELS = ["L'idée", "Paroles", "Musique"];
 
+// Reprise audio-conditionnee (Suno) prete mais MASQUEE tant qu'on n'a pas
+// branche Suno. Passer a true pour exposer le choix "Reprendre le morceau".
+const SUNO_UI_ENABLED = false;
+
 export default function CreateSong() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
@@ -999,25 +1003,27 @@ export default function CreateSong() {
                             <X size={15} />
                           </button>
                         </div>
-                        {/* Choix du mode : s'inspirer vs reprendre */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setStyleRefMode("inspire")}
-                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${styleRefMode === "inspire" ? "border-safran bg-safran/10 ring-2 ring-safran/25" : "border-line bg-white hover:border-safran/40"}`}
-                          >
-                            <div className="text-xs font-bold text-ink">S'inspirer du style</div>
-                            <div className="text-[0.65rem] text-muted mt-0.5">Nouveau morceau, même ambiance</div>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setStyleRefMode("cover")}
-                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${styleRefMode === "cover" ? "border-safran bg-safran/10 ring-2 ring-safran/25" : "border-line bg-white hover:border-safran/40"}`}
-                          >
-                            <div className="text-xs font-bold text-ink">Reprendre le morceau</div>
-                            <div className="text-[0.65rem] text-muted mt-0.5">Au plus proche de l'extrait</div>
-                          </button>
-                        </div>
+                        {/* Choix du mode : s'inspirer vs reprendre (masque tant que Suno n'est pas branche) */}
+                        {SUNO_UI_ENABLED && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setStyleRefMode("inspire")}
+                              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${styleRefMode === "inspire" ? "border-safran bg-safran/10 ring-2 ring-safran/25" : "border-line bg-white hover:border-safran/40"}`}
+                            >
+                              <div className="text-xs font-bold text-ink">S'inspirer du style</div>
+                              <div className="text-[0.65rem] text-muted mt-0.5">Nouveau morceau, même ambiance</div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setStyleRefMode("cover")}
+                              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${styleRefMode === "cover" ? "border-safran bg-safran/10 ring-2 ring-safran/25" : "border-line bg-white hover:border-safran/40"}`}
+                            >
+                              <div className="text-xs font-bold text-ink">Reprendre le morceau</div>
+                              <div className="text-[0.65rem] text-muted mt-0.5">Au plus proche de l'extrait</div>
+                            </button>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <button
