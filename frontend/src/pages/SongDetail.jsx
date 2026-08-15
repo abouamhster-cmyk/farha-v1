@@ -6,7 +6,7 @@ import ConfirmModal from "../components/ConfirmModal.jsx";
 import ShareModal from "../components/ShareModal.jsx";
 import {
   ChevronLeft, Loader2, Download, Unlock, Music, AlertTriangle,
-  Globe, User, RefreshCw, Play, Pause, Sparkles, Lock, Share2, Check, ShieldCheck, Mic2, Headphones, CheckCircle2, FileText, RotateCcw, Layers, Plus
+  Globe, User, RefreshCw, Play, Pause, Sparkles, Lock, Share2, Check, ShieldCheck, Mic2, Headphones, CheckCircle2, FileText, RotateCcw, Layers, Plus, X
 } from "lucide-react";
 
 const VARIANT_STATUS_LABEL = {
@@ -33,6 +33,7 @@ export default function SongDetail() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [regeneratingMusic, setRegeneratingMusic] = useState(false);
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
   const [activeLyricsTab, setActiveLyricsTab] = useState("darija");
   const [unlockSuccess, setUnlockSuccess] = useState(false);
 
@@ -399,11 +400,10 @@ export default function SongDetail() {
         </div>
       </div>
 
-      {/* 2 colonnes */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+      {/* Colonne centrale : lecteur + gestion (les paroles sont dans un modal) */}
+      <div className="max-w-xl mx-auto">
 
-        {/* COLONNE GAUCHE : LECTEUR + GESTION */}
-        <div className="lg:col-span-5 flex flex-col space-y-5 sm:space-y-6">
+        <div className="flex flex-col space-y-5 sm:space-y-6">
 
           {/* Régénération de la musique : indicateur clair */}
           {regeneratingMusic && (
@@ -572,6 +572,20 @@ export default function SongDetail() {
           )}
 
           {/* Carte de gestion unique : sections claires separees par des filets */}
+          {/* Voir les paroles (modal) — n'affecte pas la progression */}
+          {song.lyrics && (
+            <button
+              onClick={() => setShowLyrics(true)}
+              className="w-full bg-white border border-line rounded-2xl sm:rounded-3xl p-4 shadow-sm flex items-center justify-between gap-3 hover:border-emerald hover:bg-emerald/5 transition-colors cursor-pointer active:scale-[0.99]"
+            >
+              <span className="flex items-center gap-2.5 font-bold text-sm text-ink">
+                <span className="w-9 h-9 rounded-xl bg-emerald/10 text-emerald flex items-center justify-center flex-shrink-0"><FileText size={17} /></span>
+                Voir les paroles
+              </span>
+              <ChevronLeft size={18} className="text-muted rotate-180" />
+            </button>
+          )}
+
           {(song.lyrics || song.instrumental) && (
             <div className="bg-white border border-line rounded-2xl sm:rounded-3xl shadow-sm divide-y divide-line overflow-hidden animate-slideUp" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
 
@@ -672,64 +686,6 @@ export default function SongDetail() {
           )}
         </div>
 
-        {/* COLONNE DROITE : PAROLES */}
-        <div className="lg:col-span-7">
-          {song.lyrics ? (
-            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm animate-slideUp" style={{ animationDelay: "100ms", animationFillMode: "both" }}>
-              <div className="flex items-center justify-between border-b border-line pb-3 sm:pb-4 mb-4 flex-wrap gap-2">
-                <h2 className="font-display text-base sm:text-lg lg:text-xl font-bold">Paroles</h2>
-
-                <div className="flex bg-cream p-1 rounded-xl border border-line text-xs font-bold">
-                  <button
-                    onClick={() => setActiveLyricsTab("darija")}
-                    className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                      activeLyricsTab === "darija" ? "bg-emerald text-white" : "text-muted hover:text-ink"
-                    }`}
-                  >
-                    Arabe
-                  </button>
-                  {song.lyrics_fr && (
-                    <button
-                      onClick={() => setActiveLyricsTab("french")}
-                      className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                        activeLyricsTab === "french" ? "bg-emerald text-white" : "text-muted hover:text-ink"
-                      }`}
-                    >
-                      Français
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-cream rounded-2xl p-4 sm:p-6 border border-line/60 overflow-y-auto max-h-[65vh]">
-                {activeLyricsTab === "darija" ? (
-                  <p className="font-arabic text-right text-base sm:text-lg lg:text-2xl leading-loose whitespace-pre-wrap" dir="rtl">
-                    {song.lyrics}
-                  </p>
-                ) : (
-                  <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap text-muted">
-                    {song.lyrics_fr}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : song.instrumental ? (
-            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[200px] gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-emerald/10 text-emerald flex items-center justify-center">
-                <Music size={26} />
-              </div>
-              <div>
-                <p className="font-display font-bold text-lg">Morceau instrumental</p>
-                <p className="text-muted text-sm mt-1">Pas de paroles — juste la musique.</p>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-8 text-center text-muted text-sm flex items-center justify-center min-h-[200px]">
-              Aucune parole enregistrée pour ce morceau.
-            </div>
-          )}
-        </div>
-
       </div>
 
       <ConfirmModal
@@ -743,6 +699,38 @@ export default function SongDetail() {
         <p>Une nouvelle version musicale sera composée avec les mêmes paroles. Cela consommera <strong>1 crédit</strong> de votre solde.</p>
         <p className="mt-2">Crédits restants : <strong className="text-safran">{profile?.credits ?? 0}</strong></p>
       </ConfirmModal>
+
+      {/* Modal Paroles */}
+      {showLyrics && song.lyrics && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setShowLyrics(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+        >
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl max-h-[88vh] flex flex-col animate-scaleIn">
+            <div className="flex items-center justify-between p-5 border-b border-line flex-shrink-0">
+              <h3 className="font-display text-lg font-bold">Paroles</h3>
+              <div className="flex items-center gap-2">
+                <div className="flex bg-cream p-1 rounded-xl border border-line text-xs font-bold">
+                  <button onClick={() => setActiveLyricsTab("darija")} className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${activeLyricsTab === "darija" ? "bg-emerald text-white" : "text-muted hover:text-ink"}`}>Original</button>
+                  {song.lyrics_fr && (
+                    <button onClick={() => setActiveLyricsTab("french")} className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${activeLyricsTab === "french" ? "bg-emerald text-white" : "text-muted hover:text-ink"}`}>Français</button>
+                  )}
+                </div>
+                <button onClick={() => setShowLyrics(false)} className="w-8 h-8 rounded-full bg-cream hover:bg-line text-muted hover:text-ink flex items-center justify-center transition-colors cursor-pointer">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+            <div className="p-5 overflow-y-auto bg-cream/40">
+              {activeLyricsTab === "darija" ? (
+                <p className="font-arabic text-right text-lg sm:text-2xl leading-loose whitespace-pre-wrap" dir="rtl">{song.lyrics}</p>
+              ) : (
+                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap text-muted">{song.lyrics_fr}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showShareModal && song && (
         <ShareModal

@@ -334,26 +334,50 @@ export default function CreateSong() {
 
   useEffect(() => {
     if (loadSongId) return; // pas de restauration localStorage si on ouvre une chanson precise
-    const draft = loadDraft();
-    if (draft) {
+    if (!user?.id) return;  // brouillon scope par utilisateur
+    const draft = loadDraft(user.id);
+    if (!draft) return;
+
+    let cancelled = false;
+    (async () => {
       if (draft.form) setForm(draft.form);
-      if (draft.songId) setSongId(draft.songId);
-      if (draft.lyrics) setLyrics(draft.lyrics);
-      if (draft.lyricsFr) { setLyricsFr(draft.lyricsFr); setTranslatedLyrics(draft.lyricsFr); }
-      if (draft.lyricsVersion) setLyricsVersion(draft.lyricsVersion);
-      if (draft.step) { setStep(draft.step); setMaxStep(Math.max(draft.step, draft.lyrics ? 2 : 1)); }
-      if (draft.lyrics) setMaxStep((m) => Math.max(m, 2));
       if (draft.activeTab) setActiveTab(draft.activeTab);
       if (draft.freeMode) setFreeMode(true);
       if (draft.songType) setSongType(draft.songType);
-      setDraftRestored(true);
-      setTimeout(() => setDraftRestored(false), 4000);
-    }
-  }, [loadSongId]);
+
+      // On ne restaure le songId / les paroles / l'etape QUE si la chanson
+      // existe encore ET appartient a ce compte. Sinon (chanson supprimee
+      // ou d'un autre compte), on repart d'un formulaire propre.
+      if (draft.songId) {
+        const { data: owned } = await supabase
+          .from("songs")
+          .select("id")
+          .eq("id", draft.songId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (owned) {
+          setSongId(draft.songId);
+          if (draft.lyrics) setLyrics(draft.lyrics);
+          if (draft.lyricsFr) { setLyricsFr(draft.lyricsFr); setTranslatedLyrics(draft.lyricsFr); }
+          if (draft.lyricsVersion) setLyricsVersion(draft.lyricsVersion);
+          if (draft.step) setStep(draft.step);
+          setMaxStep(Math.max(draft.step || 1, draft.lyrics ? 2 : 1));
+          setDraftRestored(true);
+          setTimeout(() => setDraftRestored(false), 4000);
+          return;
+        }
+        // songId invalide -> on purge la partie liee a la chanson.
+        clearDraft(user.id);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [loadSongId, user?.id]);
 
   useEffect(() => {
-    saveDraft({ form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab, freeMode, songType });
-  }, [form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab, freeMode, songType]);
+    if (!user?.id) return;
+    saveDraft(user.id, { form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab, freeMode, songType });
+  }, [user?.id, form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab, freeMode, songType]);
 
   const applyTemplate = (tmpl) => {
     setForm({
@@ -514,7 +538,7 @@ export default function CreateSong() {
     try {
       await callFunction("generate-music", { songId: newId });
       await refreshProfile();
-      clearDraft();
+      clearDraft(user?.id);
       navigate(`/chanson/${newId}`);
     } catch (err) {
       setError(err.message || String(err));
@@ -625,7 +649,7 @@ export default function CreateSong() {
     setCreatingVariant(true);
     try {
       const res = await callFunction("create-variant", { songId, copyLyrics: true });
-      clearDraft();
+      clearDraft(user?.id);
       navigate(`/creer?song=${res.songId}&step=${res.startStep || 2}`);
     } catch (err) {
       setError(err.message || String(err));
@@ -663,7 +687,7 @@ export default function CreateSong() {
     try {
       await callFunction("generate-music", { songId });
       await refreshProfile();
-      clearDraft();
+      clearDraft(user?.id);
       navigate(`/chanson/${songId}`);
     } catch (err) {
       setError(err.message);
@@ -1088,7 +1112,7 @@ export default function CreateSong() {
                         activeTab === "darija" ? "border-emerald text-emerald font-bold" : "border-transparent text-muted"
                       }`}
                     >
-                      {DIALECTS.find(d => d.value === form.dialect)?.label || "Paroles"}
+                      {freeMode ? "Paroles" : (DIALECTS.find(d => d.value === form.dialect)?.label || "Paroles")}
                     </button>
                     <div className={`flex items-center border-b-2 transition-colors ${activeTab === "translation" ? "border-emerald" : "border-transparent"}`}>
                       <button

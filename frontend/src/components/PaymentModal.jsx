@@ -3,7 +3,7 @@ import { callFunction } from "../lib/supabaseClient.js";
 import { X, CreditCard, Loader2, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function PaymentModal({ pack, onClose }) {
-  const [provider, setProvider] = useState("stripe"); // "stripe" | "paypal" | "fedapay"
+  const [provider, setProvider] = useState("paypal"); // "paypal" | "fedapay"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -67,27 +67,7 @@ export default function PaymentModal({ pack, onClose }) {
           </label>
 
           <div className="grid grid-cols-1 gap-2">
-            {/* Stripe */}
-            <button
-              type="button"
-              onClick={() => setProvider("stripe")}
-              className={`p-2.5 sm:p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
-                provider === "stripe"
-                  ? "border-safran bg-safran/10 text-ink font-bold shadow-xs ring-2 ring-safran/30"
-                  : "border-line bg-white hover:border-emerald/40 text-muted"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <CreditCard size={16} className={provider === "stripe" ? "text-safran" : "text-emerald"} />
-                <div>
-                  <div className="text-xs font-bold leading-tight">Carte Bancaire (Stripe)</div>
-                  <div className="text-[0.65rem] opacity-75">Visa, Mastercard, Carte Bleue</div>
-                </div>
-              </div>
-              <span className="text-[0.65rem] font-bold text-emerald bg-emerald/10 px-2 py-0.5 rounded-md">Sécurisé</span>
-            </button>
-
-            {/* PayPal */}
+            {/* PayPal (gère aussi les cartes bancaires) */}
             <button
               type="button"
               onClick={() => setProvider("paypal")}
@@ -98,10 +78,10 @@ export default function PaymentModal({ pack, onClose }) {
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <span className="font-bold text-sm text-blue-600">P</span>
+                <CreditCard size={16} className={provider === "paypal" ? "text-safran" : "text-emerald"} />
                 <div>
-                  <div className="text-xs font-bold leading-tight">PayPal</div>
-                  <div className="text-[0.65rem] opacity-75">Solde PayPal ou carte</div>
+                  <div className="text-xs font-bold leading-tight">PayPal ou Carte Bancaire</div>
+                  <div className="text-[0.65rem] opacity-75">Solde PayPal, Visa, Mastercard, Carte Bleue</div>
                 </div>
               </div>
               <span className="text-[0.65rem] font-bold text-emerald bg-emerald/10 px-2 py-0.5 rounded-md">International</span>

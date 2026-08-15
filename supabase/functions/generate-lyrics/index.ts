@@ -128,9 +128,9 @@ DEMANDE LIBRE DU CLIENT (référence absolue) :
 
 ${perspective}
 
-RÈGLES :
-1. Déduis TOI-MÊME de la demande : la langue / le dialecte, le style musical, le type de voix et le TON. Respecte scrupuleusement tout ce que le client précise. S'il ne précise pas la langue, écris en darija marocaine authentique.
-2. Écris la version principale dans la langue/dialecte demandé (alphabet arabe si c'est un dialecte arabe).
+RÈGLES (LIBERTÉ TOTALE — n'impose RIEN) :
+1. LANGUE : écris EXACTEMENT dans la ou les langues demandées par le client — français, anglais, darija (n'importe quel dialecte), arabe, ou un MÉLANGE si demandé. N'impose aucune langue. UNIQUEMENT si le client ne précise aucune langue, choisis la darija marocaine.
+2. STYLE / VOIX / TON / STRUCTURE : respecte scrupuleusement ce que le client décrit (genre, type de voix, homme/femme, ambiance…). Ne rajoute pas de contrainte non demandée.
 3. Adapte la longueur et le ton au type de chanson demandé.
 
 ${LYRICS_CRAFT}
@@ -138,11 +138,11 @@ ${LYRICS_CRAFT}
 STRUCTURE : balises claires — [Couplet 1], [Refrain] (mémorable), [Couplet 2], [Pont] si pertinent, [Outro].
 
 FORMAT DE RÉPONSE STRICT (balises exactes) :
-DARIJA:
-[l'intégralité des paroles dans la langue/dialecte demandé, avec les balises]
+PAROLES:
+[l'intégralité des paroles, dans la/les langue(s) demandée(s), avec les balises]
 
 FRANCAIS:
-[la traduction française complète, structurée exactement de la même manière]
+[traduction française complète. Si les paroles sont DÉJÀ en français, recopie-les à l'identique ici.]
 
 GÉNÈRE MAINTENANT LA CHANSON :`;
 }
@@ -150,11 +150,12 @@ GÉNÈRE MAINTENANT LA CHANSON :`;
 function parseLyrics(raw: string): { darija: string; french: string } {
   const cleaned = raw.replace(/\*+/g, "").replace(/#+\s*/g, "").trim();
 
-  const darijaMatch = cleaned.match(/DARIJA\s*:\s*([\s\S]*?)(?=FRAN[CÇ]AIS\s*:|$)/i);
-  const frenchMatch = cleaned.match(/FRAN[CÇ]AIS\s*:\s*([\s\S]*?)$/i);
+  // Accepte DARIJA: (mode guide) ou PAROLES:/LYRICS: (mode libre, toute langue).
+  const mainMatch = cleaned.match(/(?:DARIJA|PAROLES|LYRICS)\s*:\s*([\s\S]*?)(?=(?:FRAN[CÇ]AIS|FRENCH)\s*:|$)/i);
+  const frenchMatch = cleaned.match(/(?:FRAN[CÇ]AIS|FRENCH)\s*:\s*([\s\S]*?)$/i);
 
-  const darija = (darijaMatch?.[1] ?? cleaned).replace(/^DARIJA\s*:\s*/i, "").trim();
-  const french = (frenchMatch?.[1] ?? "").replace(/^FRAN[CÇ]AIS\s*:\s*/i, "").trim();
+  const darija = (mainMatch?.[1] ?? cleaned).replace(/^(?:DARIJA|PAROLES|LYRICS)\s*:\s*/i, "").trim();
+  const french = (frenchMatch?.[1] ?? "").replace(/^(?:FRAN[CÇ]AIS|FRENCH)\s*:\s*/i, "").trim();
 
   return { darija, french: french || darija };
 }

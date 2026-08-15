@@ -5,28 +5,33 @@
 // - Erreur réseau
 // - Fermeture accidentelle du navigateur
 
-const CACHE_KEY = "farha_song_draft";
+// IMPORTANT : le brouillon est scope PAR UTILISATEUR. Sans ca, un compte
+// verrait le brouillon (et le songId) d'un autre compte sur le meme
+// navigateur -> "Chanson introuvable" et fuite de donnees.
+const CACHE_KEY_BASE = "farha_song_draft";
 
-export function saveDraft(data) {
+function draftKey(userId) {
+  return userId ? `${CACHE_KEY_BASE}_${userId}` : CACHE_KEY_BASE;
+}
+
+export function saveDraft(userId, data) {
+  if (!userId) return; // pas de brouillon anonyme
   try {
-    const payload = {
-      ...data,
-      savedAt: Date.now(),
-    };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+    const payload = { ...data, savedAt: Date.now() };
+    localStorage.setItem(draftKey(userId), JSON.stringify(payload));
   } catch (e) {
     console.warn("Impossible de sauvegarder le brouillon:", e);
   }
 }
 
-export function loadDraft() {
+export function loadDraft(userId) {
+  if (!userId) return null;
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(draftKey(userId));
     if (!raw) return null;
     const data = JSON.parse(raw);
-    // Expire après 24h
     if (Date.now() - data.savedAt > 24 * 60 * 60 * 1000) {
-      clearDraft();
+      clearDraft(userId);
       return null;
     }
     return data;
@@ -35,9 +40,11 @@ export function loadDraft() {
   }
 }
 
-export function clearDraft() {
+export function clearDraft(userId) {
   try {
-    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(draftKey(userId));
+    // Nettoyage de l'ancien format global (migration douce).
+    localStorage.removeItem(CACHE_KEY_BASE);
   } catch (e) {
     // silencieux
   }
