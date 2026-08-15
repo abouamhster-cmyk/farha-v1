@@ -3,8 +3,8 @@ declare const Deno: any;
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { getSupabaseAdmin, getAuthedUser } from "../_shared/supabaseAdmin.ts";
 import { detectSensitiveTopic, sensitiveTopicMessage } from "../_shared/moderation.ts";
+import { getLyricsRegenLimit } from "../_shared/entitlement.ts";
 
-const MAX_REGENERATIONS = 4;
 const MIN_LINES = 16;
 const MAX_RETRIES = 3;
 
@@ -181,8 +181,9 @@ Deno.serve(async (req: Request) => {
 
     if (fetchErr || !song) return jsonResponse({ error: "Chanson introuvable" }, 404);
 
-    if (song.lyrics_version >= MAX_REGENERATIONS) {
-      return jsonResponse({ error: "Nombre maximum de régénérations atteint." }, 429);
+    const regenLimit = await getLyricsRegenLimit(admin, user.id);
+    if (song.lyrics_version >= regenLimit) {
+      return jsonResponse({ error: `Limite de régénérations de paroles atteinte (${regenLimit}). Passez à un plan supérieur pour en avoir plus.` }, 429);
     }
 
     const sensitiveTopic = detectSensitiveTopic(song.brief, song.occasion, song.recipient_name);

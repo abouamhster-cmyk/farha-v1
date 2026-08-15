@@ -641,15 +641,13 @@ export default function SongDetail() {
                   </div>
                   <button
                     onClick={() => setShowRegenConfirm(true)}
-                    disabled={regeneratingMusic || (((song.music_regen_count ?? 0) >= 1) && (profile?.credits ?? 0) === 0)}
+                    disabled={regeneratingMusic || (profile?.credits ?? 0) === 0}
                     className="w-full flex items-center justify-center gap-2 border border-line hover:border-emerald hover:bg-emerald/5 text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs disabled:opacity-50 cursor-pointer active:scale-[0.97]"
                   >
-                    <RefreshCw size={14} /> Régénérer la musique {(song.music_regen_count ?? 0) < 1 ? "(gratuit)" : "(1 crédit)"}
+                    <RefreshCw size={14} /> Régénérer la musique (1 crédit)
                   </button>
                   <p className="text-[0.65rem] text-muted leading-relaxed">
-                    {(song.music_regen_count ?? 0) < 1
-                      ? <>La <strong>1re régénération est gratuite</strong>. Recompose une nouvelle version et <strong>remplace</strong> l'actuelle.</>
-                      : <>Recompose une nouvelle musique sur ces paroles et <strong>remplace</strong> l'actuelle.</>}
+                    Recompose une nouvelle musique sur ces paroles et <strong>remplace</strong> l'actuelle (1 crédit).
                   </p>
                 </div>
               )}
@@ -712,17 +710,11 @@ export default function SongDetail() {
         onCancel={() => setShowRegenConfirm(false)}
         onConfirm={handleRegenerateMusic}
         title="Régénérer la musique ?"
-        confirmLabel={(song.music_regen_count ?? 0) < 1 ? "Régénérer (gratuit)" : "Régénérer (1 crédit)"}
+        confirmLabel="Régénérer (1 crédit)"
         confirmColor="bg-emerald hover:bg-emerald-light"
       >
-        {(song.music_regen_count ?? 0) < 1 ? (
-          <p>Une nouvelle version sera composée avec les mêmes paroles. <strong className="text-emerald">Cette 1re régénération est gratuite</strong> — les suivantes coûteront 1 crédit.</p>
-        ) : (
-          <>
-            <p>Une nouvelle version musicale sera composée avec les mêmes paroles. Cela consommera <strong>1 crédit</strong> de votre solde.</p>
-            <p className="mt-2">Crédits restants : <strong className="text-safran">{profile?.credits ?? 0}</strong></p>
-          </>
-        )}
+        <p>Une nouvelle version musicale sera composée avec les mêmes paroles. Cela consommera <strong>1 crédit</strong> de votre solde.</p>
+        <p className="mt-2">Crédits restants : <strong className="text-safran">{profile?.credits ?? 0}</strong></p>
       </ConfirmModal>
 
       {showShareModal && song && (
