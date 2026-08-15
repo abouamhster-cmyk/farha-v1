@@ -61,9 +61,10 @@ async function describeStyleFromAudio(geminiKey: string, audioBytes: Uint8Array,
   }
 }
 
-const PREVIEW_SECONDS = 30;
+const PREVIEW_SECONDS = 40;
 const GEMINI_RETRIES = 2;
-const FREE_GENERATIONS_PER_DAY = Number(Deno.env.get("FREE_GENERATIONS_PER_DAY") ?? "1");
+// Extrait gratuit : UNE seule fois a vie (pas par jour).
+const FREE_LIFETIME_GENERATIONS = Number(Deno.env.get("FREE_LIFETIME_GENERATIONS") ?? "1");
 const DEFAULT_FREE_DURATION = 60;
 
 const STYLE_PROMPTS: Record<string, string> = {
@@ -428,17 +429,17 @@ Deno.serve(async (req: Request) => {
         }
         creditConsumed = true;
       } else {
-        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { count: recentCount } = await admin
+        // Extrait gratuit : UNE seule fois a vie. On compte toutes les
+        // chansons deja composees (music_provider renseigne).
+        const { count: lifetimeCount } = await admin
           .from("songs")
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id)
-          .not("music_provider", "is", null)
-          .gte("created_at", since);
+          .not("music_provider", "is", null);
 
-        if ((recentCount ?? 0) >= FREE_GENERATIONS_PER_DAY) {
+        if ((lifetimeCount ?? 0) >= FREE_LIFETIME_GENERATIONS) {
           return jsonResponse(
-            { error: "Limite de création gratuite atteinte pour aujourd'hui. Achetez des crédits pour continuer sans limite." },
+            { error: "Votre extrait gratuit a déjà été utilisé. Achetez des crédits pour créer vos chansons complètes." },
             429
           );
         }

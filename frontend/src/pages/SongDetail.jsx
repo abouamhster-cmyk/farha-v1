@@ -38,6 +38,7 @@ export default function SongDetail() {
 
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [previewEnded, setPreviewEnded] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [audioLoading, setAudioLoading] = useState(false);
@@ -364,7 +365,7 @@ export default function SongDetail() {
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-xs font-bold text-muted bg-cream px-2.5 py-0.5 rounded-full border border-line">
-                <Lock size={11} /> Extrait 30s
+                <Lock size={11} /> Extrait 40s
               </span>
             )}
           </div>
@@ -448,7 +449,7 @@ export default function SongDetail() {
                     preload="auto"
                     onTimeUpdate={handleTimeUpdate}
                     onLoadedMetadata={handleTimeUpdate}
-                    onEnded={() => setIsPlaying(false)}
+                    onEnded={() => { setIsPlaying(false); if (!isUnlocked) setPreviewEnded(true); }}
                   />
                 )}
 
@@ -460,7 +461,7 @@ export default function SongDetail() {
                       <span className="text-white text-[0.6rem] sm:text-[0.65rem] font-bold uppercase tracking-wider flex items-center gap-1">
                         {isUnlocked
                           ? <><Mic2 size={10} className="text-safran" /> HD Complet</>
-                          : <><Lock size={10} /> Extrait 30s</>
+                          : <><Lock size={10} /> Extrait 40s</>
                         }
                       </span>
                     </div>
@@ -515,7 +516,7 @@ export default function SongDetail() {
                     {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
                   </button>
                   <span className="text-xs text-white/80 font-medium">
-                    {isPlaying ? "Lecture en cours..." : isUnlocked ? "Écouter la musique complète HD" : "Écouter l'extrait gratuit (30s)"}
+                    {isPlaying ? "Lecture en cours..." : isUnlocked ? "Écouter la musique complète HD" : "Écouter l'extrait gratuit (40s)"}
                   </span>
                 </div>
 
@@ -531,6 +532,16 @@ export default function SongDetail() {
                   </div>
                 ) : (
                   <div className="border-t border-white/15 pt-4 sm:pt-5 space-y-3">
+                    {previewEnded && (
+                      <div className="bg-safran/15 border border-safran/40 rounded-2xl p-3.5 text-center animate-popIn">
+                        <p className="text-sm font-bold text-white flex items-center justify-center gap-1.5">
+                          <Lock size={14} className="text-safran" /> Fin de l'extrait gratuit (40s)
+                        </p>
+                        <p className="text-xs text-white/75 mt-1 leading-relaxed">
+                          Débloquez pour écouter la <strong>chanson complète</strong> et la <strong>partager</strong> avec vos proches.
+                        </p>
+                      </div>
+                    )}
                     <p className="font-bold text-xs sm:text-sm text-white">
                       Vous aimez le morceau ? Débloquez la version complète HD.
                     </p>
