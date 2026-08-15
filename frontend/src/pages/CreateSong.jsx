@@ -235,6 +235,8 @@ export default function CreateSong() {
   const [activeTab, setActiveTab] = useState("darija");
   // Mode libre : l'utilisateur décrit tout lui-même (aucun preset imposé).
   const [freeMode, setFreeMode] = useState(false);
+  // Type de création : 'vocal' (chanson avec voix) ou 'instrumental'.
+  const [songType, setSongType] = useState("vocal");
 
   // Voie A (premium Pro/VIP) : musique de référence.
   const [premiumStyle, setPremiumStyle] = useState(false); // droit d'accès
@@ -313,6 +315,7 @@ export default function CreateSong() {
       setTranslatedLyrics(data.lyrics_fr || "");
       setLyricsVersion(data.lyrics_version || 0);
       setLyricsHistory(Array.isArray(data.lyrics_history) ? data.lyrics_history : []);
+      setSongType(data.instrumental ? "instrumental" : "vocal");
 
       const reachable = computeMaxStep(data);
       setMaxStep(reachable);
@@ -342,14 +345,15 @@ export default function CreateSong() {
       if (draft.lyrics) setMaxStep((m) => Math.max(m, 2));
       if (draft.activeTab) setActiveTab(draft.activeTab);
       if (draft.freeMode) setFreeMode(true);
+      if (draft.songType) setSongType(draft.songType);
       setDraftRestored(true);
       setTimeout(() => setDraftRestored(false), 4000);
     }
   }, [loadSongId]);
 
   useEffect(() => {
-    saveDraft({ form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab, freeMode });
-  }, [form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab, freeMode]);
+    saveDraft({ form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab, freeMode, songType });
+  }, [form, songId, lyrics, lyricsFr, lyricsVersion, step, activeTab, freeMode, songType]);
 
   const applyTemplate = (tmpl) => {
     setForm({
@@ -461,6 +465,65 @@ export default function CreateSong() {
     await handleGenerateLyrics(data.id);
   }
 
+  // Création d'un INSTRUMENTAL : pas d'étape paroles, on compose direct.
+  async function handleCreateInstrumental(e) {
+    e.preventDefault();
+    setError("");
+    if (form.brief.trim().length < 8) {
+      setError("Décrivez l'instrumental que vous voulez (type, ambiance, instruments…).");
+      return;
+    }
+    setLoading(true);
+    setComposing(true);
+
+    const { data, error: insErr } = await supabase
+      .from("songs")
+      .insert({
+        user_id: user.id,
+        dialect: form.dialect,
+        music_style: form.music_style,
+        voice_type: form.voice_type,
+        recipient_name: form.recipient_name || null,
+        occasion: form.occasion,
+        brief: form.brief,
+        instrumental: true,
+      })
+      .select()
+      .single();
+
+    if (insErr) { setLoading(false); setComposing(false); return setError(insErr.message); }
+
+    const newId = data.id;
+    setSongId(newId);
+    setStep(2); // étape "Musique" pour l'instrumental (2 étapes)
+
+    // Référence musicale (premium) — best-effort
+    if (premiumStyle && styleRefFile && styleRefRights) {
+      try {
+        const ext = (styleRefFile.name.split(".").pop() || "mp3").toLowerCase();
+        const path = `${user.id}/${newId}_${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("style-refs")
+          .upload(path, styleRefFile, { upsert: true, contentType: styleRefFile.type || undefined });
+        if (!upErr) {
+          await supabase.from("songs").update({ style_ref_path: path, style_ref_mode: styleRefMode }).eq("id", newId);
+        }
+      } catch { /* on compose quand même */ }
+    }
+
+    try {
+      await callFunction("generate-music", { songId: newId });
+      await refreshProfile();
+      clearDraft();
+      navigate(`/chanson/${newId}`);
+    } catch (err) {
+      setError(err.message || String(err));
+      setComposing(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleGoBackAndResubmit() {
     setStep(1);
   }
@@ -524,7 +587,9 @@ export default function CreateSong() {
   function goToStep(target) {
     if (target > maxStep) return;
     setError("");
-    if (target === 3) {
+    // La dernière étape (Musique) vit sur la page de la chanson.
+    const musicStep = songType === "instrumental" ? 2 : 3;
+    if (target === musicStep) {
       if (songId) navigate(`/chanson/${songId}`);
       return;
     }
@@ -609,6 +674,10 @@ export default function CreateSong() {
   }
 
   const hasExistingLyrics = !!(lyrics || lyricsFr);
+  const isInstrumental = songType === "instrumental";
+  const stepLabels = isInstrumental ? ["L'idée", "Musique"] : STEP_LABELS;
+  const stepIcons = isInstrumental ? [FileText, Headphones] : STEP_ICONS;
+  const musicStepIndex = stepLabels.length; // dernière étape = Musique (page chanson)
 
   if (loadingSong || creatingVariant) {
     return (
@@ -638,8 +707,8 @@ export default function CreateSong() {
 
       {/* Stepper cliquable : on peut revenir a toute etape deja atteinte */}
       <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-3 sm:p-5 mb-6 sm:mb-8 shadow-sm flex items-center justify-between">
-        {STEP_LABELS.map((label, i) => {
-          const StepIcon = STEP_ICONS[i];
+        {stepLabels.map((label, i) => {
+          const StepIcon = stepIcons[i];
           const target = i + 1;
           const done = step > target;
           const active = step === target;
@@ -661,7 +730,7 @@ export default function CreateSong() {
                 </span>
                 <span className={`text-xs sm:text-sm font-semibold hidden sm:inline transition-colors ${active ? "text-ink font-bold" : reachable ? "text-emerald" : "text-muted"}`}>{label}</span>
               </button>
-              {i < 2 && <span className="hidden md:block w-8 lg:w-12 h-px bg-line ml-2 sm:ml-3" />}
+              {i < stepLabels.length - 1 && <span className="hidden md:block w-8 lg:w-12 h-px bg-line ml-2 sm:ml-3" />}
             </div>
           );
         })}
@@ -686,6 +755,120 @@ export default function CreateSong() {
 
       {/* STEP 1 : BRIEF */}
       {step === 1 && (
+      <div className="space-y-5">
+
+        {/* Type de création : Chanson (voix) / Instrumental */}
+        <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-1.5 flex gap-1.5 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setSongType("vocal")}
+            className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer ${!isInstrumental ? "bg-cream text-ink border border-line" : "text-muted hover:text-ink"}`}
+          >
+            <Mic size={16} className={!isInstrumental ? "text-safran" : "text-emerald"} /> Chanson (avec voix)
+          </button>
+          <button
+            type="button"
+            onClick={() => setSongType("instrumental")}
+            className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer ${isInstrumental ? "bg-cream text-ink border border-line" : "text-muted hover:text-ink"}`}
+          >
+            <Music size={16} className={isInstrumental ? "text-safran" : "text-emerald"} /> Instrumental (sans voix)
+          </button>
+        </div>
+
+        {isInstrumental ? (
+          /* ---------- FORMULAIRE INSTRUMENTAL (libre, sans paroles) ---------- */
+          <form onSubmit={handleCreateInstrumental} className="bg-white border border-line rounded-2xl sm:rounded-3xl p-5 sm:p-10 space-y-6 shadow-sm animate-slideUp">
+            <div className="border-b border-line pb-5">
+              <h1 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold">Votre instrumental</h1>
+              <p className="text-muted text-xs sm:text-sm mt-1">Décrivez le morceau voulu — aucune parole, aucune voix.</p>
+            </div>
+
+            {/* Usage (optionnel, aide au classement) */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-3">Usage (optionnel)</label>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {CATEGORIES.map((cat) => {
+                  const active = form.occasion === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setForm({ ...form, occasion: cat.id })}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer active:scale-[0.97] ${active ? "border-safran bg-safran/10 text-ink font-bold ring-2 ring-safran/30" : "border-line bg-white hover:border-safran/40 text-muted"}`}
+                    >
+                      <cat.Icon size={20} className={active ? "text-safran mb-1.5" : "text-emerald mb-1.5"} />
+                      <div className="text-xs sm:text-sm font-bold leading-tight">{cat.label}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Description libre */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">Décrivez l'instrumental</label>
+              <textarea
+                className="input-field min-h-[180px] sm:min-h-[220px] text-sm sm:text-base leading-relaxed"
+                value={form.brief}
+                onChange={(e) => setForm({ ...form, brief: e.target.value })}
+                placeholder="Ex : Un jingle court et entraînant pour une pub, style guitare + percussions, ambiance ensoleillée et positive, tempo moyen…\n\n(Précisez le type, l'ambiance, les instruments, le tempo, l'usage.)"
+              />
+              <p className="text-[0.65rem] text-muted mt-1.5">Plus vous êtes précis (instruments, tempo, ambiance), plus le résultat colle à votre idée.</p>
+            </div>
+
+            {/* Nom / marque (optionnel) */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">Marque / projet (optionnel)</label>
+              <input className="input-field" value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })} placeholder="Ex : Marque 'Atlas Wear', intro de podcast…" />
+            </div>
+
+            {/* Musique de référence (premium) */}
+            {premiumStyle ? (
+              <div className="border border-safran/30 bg-safran/5 rounded-2xl p-4 space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-safran uppercase tracking-wider">
+                  <Music size={14} /> Musique de référence (optionnel)
+                </div>
+                {styleRefFile ? (
+                  <>
+                    <div className="flex items-center gap-2 bg-white rounded-xl border border-line px-3 py-2">
+                      <Music size={15} className="text-emerald flex-shrink-0" />
+                      <span className="text-xs font-semibold text-ink truncate flex-1">{styleRefFile.name}</span>
+                      <button type="button" onClick={() => { setStyleRefFile(null); setStyleRefRights(false); }} className="text-muted hover:text-henne cursor-pointer flex-shrink-0"><X size={15} /></button>
+                    </div>
+                    <label className="flex items-start gap-2 text-[0.7rem] text-muted cursor-pointer">
+                      <input type="checkbox" checked={styleRefRights} onChange={(e) => setStyleRefRights(e.target.checked)} className="mt-0.5 accent-safran cursor-pointer" />
+                      <span>Je confirme <strong>détenir les droits</strong> sur cet extrait.</span>
+                    </label>
+                  </>
+                ) : (
+                  <button type="button" onClick={() => styleRefInput.current?.click()} className="w-full p-3 rounded-xl border-2 border-dashed border-safran/40 text-muted hover:text-safran hover:border-safran/60 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer">
+                    <Upload size={16} /> Choisir un extrait (mp3/m4a, max 10 Mo)
+                  </button>
+                )}
+                <input ref={styleRefInput} type="file" accept="audio/*" onChange={handleStyleRefChange} className="hidden" />
+              </div>
+            ) : (
+              <div className="border border-line rounded-2xl p-4 flex items-center gap-3 bg-cream/60">
+                <div className="w-9 h-9 rounded-xl bg-safran/15 text-safran flex items-center justify-center flex-shrink-0"><Lock size={16} /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-ink flex items-center gap-1.5"><Crown size={12} className="text-safran" /> Instrumental dans le style d'une musique</div>
+                  <p className="text-[0.7rem] text-muted mt-0.5">Débloqué avec <strong>Pro</strong> & <strong>Studio VIP</strong>.</p>
+                </div>
+                <button type="button" onClick={() => navigate("/tarifs")} className="text-[0.7rem] font-bold text-safran bg-safran/10 hover:bg-safran/20 border border-safran/30 px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex-shrink-0">Débloquer</button>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-henne/10 text-henne rounded-2xl px-4 py-3 text-xs sm:text-sm flex items-start gap-2.5 border border-henne/20">
+                <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" /><div>{error}</div>
+              </div>
+            )}
+
+            <button type="submit" disabled={loading || !online} className="w-full flex items-center justify-center gap-2 bg-henne hover:bg-henne-light text-white font-bold py-3.5 sm:py-4 rounded-2xl shadow-lg transition-all text-sm sm:text-base lg:text-lg disabled:opacity-50 cursor-pointer border border-white/10 active:scale-[0.98]">
+              {loading ? <><Loader2 size={20} className="animate-spin" /> Composition de l'instrumental…</> : <><Music size={18} /> Composer l'instrumental</>}
+            </button>
+          </form>
+        ) : (
         <form onSubmit={hasExistingLyrics ? handleResubmitIdea : handleCreateDraft} className="bg-white border border-line rounded-2xl sm:rounded-3xl p-5 sm:p-10 space-y-6 sm:space-y-7 shadow-sm animate-slideUp">
 
           <div className="flex items-start justify-between flex-wrap gap-4 border-b border-line pb-5">
@@ -863,6 +1046,8 @@ export default function CreateSong() {
               : <>{hasExistingLyrics ? "Régénérer les paroles" : "Écrire les paroles"} <ArrowRight size={18} /></>}
           </button>
         </form>
+        )}
+      </div>
       )}
 
       {/* STEP 2 : PAROLES */}

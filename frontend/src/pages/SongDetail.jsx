@@ -378,7 +378,11 @@ export default function SongDetail() {
               <User size={13} className="text-emerald" /> {song.recipient_name}
             </span>
           )}
-          {song.free_mode ? (
+          {song.instrumental ? (
+            <span className="inline-flex items-center gap-1.5 bg-emerald/10 text-emerald px-2.5 py-1.5 rounded-xl border border-emerald/25 font-semibold">
+              <Music size={13} /> Instrumental
+            </span>
+          ) : song.free_mode ? (
             <span className="inline-flex items-center gap-1.5 bg-safran/10 text-safran px-2.5 py-1.5 rounded-xl border border-safran/25 font-semibold">
               <Sparkles size={13} /> Sur mesure
             </span>
@@ -568,7 +572,7 @@ export default function SongDetail() {
           )}
 
           {/* Carte de gestion unique : sections claires separees par des filets */}
-          {song.lyrics && (
+          {(song.lyrics || song.instrumental) && (
             <div className="bg-white border border-line rounded-2xl sm:rounded-3xl shadow-sm divide-y divide-line overflow-hidden animate-slideUp" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
 
               {/* Section AJUSTER */}
@@ -576,18 +580,20 @@ export default function SongDetail() {
                 <div className="flex items-center gap-2 text-[0.7rem] font-bold text-muted uppercase tracking-wider">
                   <RotateCcw size={13} className="text-emerald" /> Ajuster ce projet
                 </div>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <Link
-                    to={`/creer?song=${song.id}&step=2`}
-                    className="flex items-center justify-center gap-1.5 border border-line hover:border-emerald hover:bg-emerald/5 text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs cursor-pointer active:scale-[0.97]"
-                  >
-                    <FileText size={14} /> Paroles
-                  </Link>
+                <div className={`grid ${song.instrumental ? "grid-cols-1" : "grid-cols-2"} gap-2.5`}>
+                  {!song.instrumental && (
+                    <Link
+                      to={`/creer?song=${song.id}&step=2`}
+                      className="flex items-center justify-center gap-1.5 border border-line hover:border-emerald hover:bg-emerald/5 text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs cursor-pointer active:scale-[0.97]"
+                    >
+                      <FileText size={14} /> Paroles
+                    </Link>
+                  )}
                   <Link
                     to={`/creer?song=${song.id}&step=1`}
                     className="flex items-center justify-center gap-1.5 border border-line hover:border-emerald hover:bg-emerald/5 text-muted hover:text-emerald font-bold py-2.5 rounded-xl transition-colors text-xs cursor-pointer active:scale-[0.97]"
                   >
-                    <Sparkles size={14} /> L'idée
+                    <Sparkles size={14} /> {song.instrumental ? "Modifier l'idée" : "L'idée"}
                   </Link>
                 </div>
               </div>
@@ -705,6 +711,16 @@ export default function SongDetail() {
                     {song.lyrics_fr}
                   </p>
                 )}
+              </div>
+            </div>
+          ) : song.instrumental ? (
+            <div className="bg-white border border-line rounded-2xl sm:rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[200px] gap-3">
+              <div className="w-14 h-14 rounded-2xl bg-emerald/10 text-emerald flex items-center justify-center">
+                <Music size={26} />
+              </div>
+              <div>
+                <p className="font-display font-bold text-lg">Morceau instrumental</p>
+                <p className="text-muted text-sm mt-1">Pas de paroles — juste la musique.</p>
               </div>
             </div>
           ) : (

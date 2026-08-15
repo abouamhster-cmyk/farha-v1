@@ -245,6 +245,31 @@ ${outro}
 CRITICAL: Expand the song duration naturally to fill between ${minDurationFormatted} and ${maxDurationFormatted} minutes total. Vocal pacing must be clear and natural to fit all lyrics. Conclude with an intentional fade-out to silence.`;
 }
 
+// Prompt pour un INSTRUMENTAL (aucune parole, aucune voix).
+function buildInstrumentalPrompt(stylePrompt: string, brief: string, occasion: string, maxDurationSeconds: number): string {
+  const d = maxDurationSeconds;
+  const minFmt = formatTimestamp(Math.round(d * 0.85));
+  const maxFmt = formatTimestamp(d);
+  const briefInfo = brief ? sanitizeForLyria(brief) : "";
+  const theme = occasion ? sanitizeForLyria(occasion) : "";
+
+  return `${stylePrompt}
+
+${PRODUCTION_DIRECTIVE}
+
+Compose a COMPLETE INSTRUMENTAL track. ABSOLUTELY NO vocals, NO lyrics, NO singing, NO spoken words, NO vocal samples — purely instrumental.
+${briefInfo ? `Creative direction from the client: ${briefInfo}` : ""}
+${theme ? `Intended use / vibe: ${theme}.` : ""}
+
+Structure:
+[0:00 - ${formatTimestamp(Math.round(d * 0.12))}] Intro — set the atmosphere, introduce the main sound.
+[${formatTimestamp(Math.round(d * 0.12))} - ${formatTimestamp(Math.round(d * 0.5))}] Main theme — a memorable, catchy melodic hook, full arrangement.
+[${formatTimestamp(Math.round(d * 0.5))} - ${formatTimestamp(Math.round(d * 0.8))}] Variation / bridge — develop the theme, add energy or emotion.
+[${formatTimestamp(Math.round(d * 0.8))} - ${maxFmt}] Outro — resolve and fade cleanly to silence before ${maxFmt}.
+
+CRITICAL: Instrumental only (no voice at all). Duration between ${minFmt} and ${maxFmt}. End with a natural fade-out to silence.`;
+}
+
 async function getUserMaxDuration(admin: any, userId: string): Promise<number> {
   try {
     const { data: orders } = await admin
@@ -453,7 +478,10 @@ Deno.serve(async (req: Request) => {
     const gcpLocation = Deno.env.get("GCP_LOCATION") ?? "us-central1";
     const vertexToken = Deno.env.get("VERTEX_ACCESS_TOKEN");
 
-    let stylePrompt = STYLE_PROMPTS[song.music_style] ?? STYLE_PROMPTS.chaabi;
+    // Instrumental = pas de genre impose (le brief/reference le decrivent).
+    let stylePrompt = song.instrumental
+      ? ""
+      : (STYLE_PROMPTS[song.music_style] ?? STYLE_PROMPTS.chaabi);
     const voicePrompt = VOICE_PROMPTS[song.voice_type] ?? VOICE_PROMPTS.homme;
 
     // VOIE A (premium Pro/VIP) : si un extrait de reference est attache et
@@ -509,7 +537,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const maxDuration = await getUserMaxDuration(admin, user.id);
-    const prompt = buildMusicPrompt(stylePrompt, voicePrompt, song.lyrics, maxDuration);
+    const prompt = song.instrumental
+      ? buildInstrumentalPrompt(stylePrompt, song.brief, song.occasion, maxDuration)
+      : buildMusicPrompt(stylePrompt, voicePrompt, song.lyrics, maxDuration);
 
     let result: LyriaResult | null = null;
     let geminiBlocked = false;
@@ -517,14 +547,19 @@ Deno.serve(async (req: Request) => {
     if (geminiKey) {
       const geminiResult = await callGeminiLyria(geminiKey, prompt);
       if (geminiResult === "blocked") {
-        console.warn("Lyria blocked original lyrics — retrying with form context only...");
-        const fallbackPrompt = buildFallbackPrompt(stylePrompt, voicePrompt, song.occasion, song.recipient_name, song.brief, song.lyrics_fr, maxDuration);
-        const retryResult = await callGeminiLyria(geminiKey, fallbackPrompt);
-        if (retryResult === "blocked") {
+        if (song.instrumental) {
+          // Pas de fallback "paroles" pour un instrumental.
           geminiBlocked = true;
         } else {
-          result = retryResult;
-          console.warn("Fallback succeeded — Lyria composed its own lyrics from form context.");
+          console.warn("Lyria blocked original lyrics — retrying with form context only...");
+          const fallbackPrompt = buildFallbackPrompt(stylePrompt, voicePrompt, song.occasion, song.recipient_name, song.brief, song.lyrics_fr, maxDuration);
+          const retryResult = await callGeminiLyria(geminiKey, fallbackPrompt);
+          if (retryResult === "blocked") {
+            geminiBlocked = true;
+          } else {
+            result = retryResult;
+            console.warn("Fallback succeeded — Lyria composed its own lyrics from form context.");
+          }
         }
       } else {
         result = geminiResult;

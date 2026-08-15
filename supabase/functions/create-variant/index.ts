@@ -74,6 +74,11 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Erreur lors de la création de la variante." }, 500);
     }
 
+    // Best-effort : conserver le type instrumental (ignore si colonne absente).
+    if (source.instrumental) {
+      await admin.from("songs").update({ instrumental: true }).eq("id", variant.id);
+    }
+
     return jsonResponse({
       songId: variant.id,
       versionNumber: variant.version_number,
