@@ -19,11 +19,11 @@ export default function Header() {
           : "bg-cream/95 border-b border-emerald/10 text-ink"
       }`}
     >
-      <nav className="max-w-[1120px] mx-auto relative flex items-center justify-between px-6 py-3.5">
+      <nav className="max-w-[1120px] mx-auto relative flex items-center justify-between gap-2 px-4 sm:px-6 py-3.5">
         {/* Logo */}
         <Link
           to="/"
-          className={`flex items-center gap-2 font-display font-bold text-xl z-10 ${
+          className={`flex items-center gap-2 font-display font-bold text-lg sm:text-xl z-10 shrink-0 ${
             isAuthPage ? "text-white" : "text-emerald"
           }`}
         >
@@ -41,15 +41,22 @@ export default function Header() {
         )}
 
         {/* Boutons droite */}
-        <div className="flex items-center gap-3 z-10">
+        <div className="flex items-center gap-1.5 sm:gap-3 z-10 shrink-0">
           {user ? (
             <>
-              <Link to="/tableau-de-bord" className="text-sm font-semibold text-safran px-3 py-2">
+              <Link
+                to="/tableau-de-bord"
+                className="text-sm font-semibold text-safran px-2 sm:px-3 py-2 whitespace-nowrap"
+              >
                 {profile?.full_name?.split(" ")[0] ?? "Mon espace"}
               </Link>
               <button
                 onClick={() => signOut().then(() => navigate("/"))}
-                className="text-sm font-semibold text-white/60 hover:text-white px-3 py-2"
+                className={`text-sm font-semibold px-2 sm:px-3 py-2 whitespace-nowrap transition-colors ${
+                  isAuthPage
+                    ? "text-white/60 hover:text-white"
+                    : "text-muted hover:text-ink"
+                }`}
               >
                 Déconnexion
               </button>
@@ -58,7 +65,7 @@ export default function Header() {
             <>
               <Link
                 to="/connexion"
-                className={`text-[0.88rem] font-semibold px-4 py-2 ${
+                className={`text-[0.88rem] font-semibold px-2 sm:px-4 py-2 whitespace-nowrap ${
                   isAuthPage ? "text-white/80 hover:text-white" : "text-emerald"
                 }`}
               >
@@ -66,9 +73,9 @@ export default function Header() {
               </Link>
               <Link
                 to="/inscription"
-                className="bg-emerald hover:bg-emerald-light text-white text-sm font-bold rounded-xl px-5 py-2.5 transition-colors"
+                className="bg-emerald hover:bg-emerald-light text-white text-[0.82rem] sm:text-sm font-bold rounded-xl px-3.5 sm:px-5 py-2.5 whitespace-nowrap transition-colors"
               >
-                Commencer →
+                Commencer <span className="hidden sm:inline">→</span>
               </Link>
             </>
           )}

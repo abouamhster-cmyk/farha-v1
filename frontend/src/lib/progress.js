@@ -31,14 +31,13 @@ export function start() {
   value = value > 0 && value < 1 ? value : 0.08;
   emit();
 
-  // Trickle : on avance par petits pas vers 90% max tant que non termine
+  // Trickle : on avance vite vers 90% max tant que non termine
   trickleTimer = setInterval(() => {
-    // plus on approche de 0.9, plus les increments sont petits (courbe naturelle)
     const remaining = 0.9 - value;
     if (remaining <= 0.001) return;
-    value += remaining * 0.12;
+    value += remaining * 0.2;
     emit();
-  }, 220);
+  }, 140);
 }
 
 export function done() {
@@ -50,10 +49,9 @@ export function done() {
   setTimeout(() => {
     visible = false;
     emit();
-    // reset differe pour ne pas voir la barre reculer
     setTimeout(() => {
       value = 0;
       emit();
-    }, 260);
-  }, 200);
+    }, 200);
+  }, 140);
 }

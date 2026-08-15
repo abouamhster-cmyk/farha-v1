@@ -50,7 +50,7 @@ export default {
         micPulse: "micPulse 1s ease-in-out infinite",
         successCheck: "successCheck 0.6s ease-out forwards",
         confettiBurst: "confettiBurst 0.8s ease-out forwards",
-        pageEnter: "pageEnter 0.32s cubic-bezier(0.22, 1, 0.36, 1)",
+        pageEnter: "pageEnter 0.22s cubic-bezier(0.22, 1, 0.36, 1)",
         floatY: "floatY 5s ease-in-out infinite",
         equalize: "equalize 0.9s ease-in-out infinite",
         haloPulse: "haloPulse 4s ease-in-out infinite",

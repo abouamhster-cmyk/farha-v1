@@ -1,4 +1,4 @@
-import { lazy, Suspense, useLayoutEffect } from "react";
+import { lazy, Suspense, useLayoutEffect, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext.jsx";
 import Header from "./components/Header.jsx";
@@ -67,7 +67,24 @@ function AppLayout({ children }) {
   );
 }
 
+// Precharge les pages principales pendant les temps morts -> navigation
+// quasi instantanee ensuite (fini l'impression de lenteur).
+function usePrefetchRoutes() {
+  useEffect(() => {
+    const prefetch = () => {
+      import("./pages/Dashboard.jsx");
+      import("./pages/CreateSong.jsx");
+      import("./pages/SongDetail.jsx");
+      import("./pages/PricingPage.jsx");
+    };
+    const ric = window.requestIdleCallback || ((cb) => setTimeout(cb, 800));
+    const id = ric(prefetch);
+    return () => (window.cancelIdleCallback ? window.cancelIdleCallback(id) : clearTimeout(id));
+  }, []);
+}
+
 export default function App() {
+  usePrefetchRoutes();
   return (
     <>
       <TopProgressBar />

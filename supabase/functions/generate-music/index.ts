@@ -8,9 +8,12 @@ import { truncateAudioBytes } from "../_shared/audioTruncate.ts";
 import { hasPremiumStyleAccess } from "../_shared/entitlement.ts";
 import { sunoEnabled, sunoUploadCover } from "../_shared/suno.ts";
 
-// Modele Gemini multimodal utilise pour "ecouter" l'extrait de reference
-// et en decrire le style musical (Voie A, fonctionnalite premium).
-const STYLE_ANALYSIS_MODEL = "gemini-2.5-flash";
+// Modeles Gemini multimodaux essayes pour "ecouter" l'extrait de reference
+// et en decrire le style (Voie A). On tente plusieurs modeles pour ne pas
+// dependre d'un seul (selon l'acces de la cle). Surchargeable par env.
+const STYLE_ANALYSIS_MODELS = (Deno.env.get("STYLE_ANALYSIS_MODEL") ||
+  "gemini-flash-latest,gemini-2.5-flash,gemini-2.0-flash")
+  .split(",").map((s) => s.trim()).filter(Boolean);
 
 // Convertit des octets en base64 (par blocs pour eviter les stack overflow).
 function bytesToBase64(bytes: Uint8Array): string {
@@ -30,31 +33,40 @@ async function describeStyleFromAudio(geminiKey: string, audioBytes: Uint8Array,
     const base64 = bytesToBase64(audioBytes);
     const instruction = `You are a music producer. Listen to this audio excerpt and describe its STYLE so another AI can compose a NEW song in the same vibe (do NOT transcribe or copy it). In 3-4 concise English sentences, describe: genre and regional flavor, approximate tempo/BPM, main instruments, groove/rhythm, mood, and vocal type. Output ONLY the style description, as production tags.`;
 
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${STYLE_ANALYSIS_MODEL}:generateContent?key=${geminiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: instruction },
-              { inline_data: { mime_type: mime || "audio/mpeg", data: base64 } },
-            ],
-          }],
-          generationConfig: { maxOutputTokens: 400, temperature: 0.4 },
-        }),
+    for (const model of STYLE_ANALYSIS_MODELS) {
+      try {
+        const resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: instruction },
+                  { inline_data: { mime_type: mime || "audio/mpeg", data: base64 } },
+                ],
+              }],
+              generationConfig: { maxOutputTokens: 400, temperature: 0.4 },
+            }),
+          }
+        );
+        if (!resp.ok) {
+          console.warn(`describeStyleFromAudio ${model} HTTP`, resp.status, (await resp.text()).slice(0, 300));
+          continue;
+        }
+        const data = await resp.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const cleaned = (text || "").replace(/\*+/g, "").replace(/#+/g, "").trim();
+        if (cleaned.length > 20) {
+          console.log(`Style de reference analyse avec ${model}`);
+          return cleaned;
+        }
+      } catch (e) {
+        console.warn(`describeStyleFromAudio ${model} exception:`, e);
       }
-    );
-
-    if (!resp.ok) {
-      console.warn("describeStyleFromAudio HTTP", resp.status, await resp.text());
-      return null;
     }
-    const data = await resp.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    const cleaned = (text || "").replace(/\*+/g, "").replace(/#+/g, "").trim();
-    return cleaned.length > 20 ? cleaned : null;
+    return null;
   } catch (err) {
     console.warn("describeStyleFromAudio exception:", err);
     return null;
