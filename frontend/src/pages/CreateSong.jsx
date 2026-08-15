@@ -240,6 +240,7 @@ export default function CreateSong() {
   const [premiumStyle, setPremiumStyle] = useState(false); // droit d'accès
   const [styleRefFile, setStyleRefFile] = useState(null);
   const [styleRefMode, setStyleRefMode] = useState("inspire"); // 'inspire' | 'cover'
+  const [styleRefRights, setStyleRefRights] = useState(false); // droits confirmés
   const styleRefInput = useRef(null);
 
   useEffect(() => {
@@ -578,9 +579,10 @@ export default function CreateSong() {
       .eq("id", songId);
     if (saveErr) { setLoading(false); setComposing(false); return setError(saveErr.message); }
 
-    // VOIE A (premium) : upload de la musique de référence si fournie.
+    // VOIE A (premium) : upload de la musique de référence si fournie
+    // ET si l'utilisateur a confirmé détenir les droits sur l'extrait.
     // Best-effort : un échec n'empêche pas la composition (style par défaut).
-    if (premiumStyle && styleRefFile) {
+    if (premiumStyle && styleRefFile && styleRefRights) {
       try {
         const ext = (styleRefFile.name.split(".").pop() || "mp3").toLowerCase();
         const path = `${user.id}/${songId}_${Date.now()}.${ext}`;
@@ -999,10 +1001,24 @@ export default function CreateSong() {
                         <div className="flex items-center gap-2 bg-white rounded-xl border border-line px-3 py-2">
                           <Music size={15} className="text-emerald flex-shrink-0" />
                           <span className="text-xs font-semibold text-ink truncate flex-1">{styleRefFile.name}</span>
-                          <button type="button" onClick={() => setStyleRefFile(null)} className="text-muted hover:text-henne cursor-pointer flex-shrink-0">
+                          <button type="button" onClick={() => { setStyleRefFile(null); setStyleRefRights(false); }} className="text-muted hover:text-henne cursor-pointer flex-shrink-0">
                             <X size={15} />
                           </button>
                         </div>
+
+                        {/* Confirmation des droits (obligatoire pour utiliser l'extrait) */}
+                        <label className="flex items-start gap-2 text-[0.7rem] text-muted cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={styleRefRights}
+                            onChange={(e) => setStyleRefRights(e.target.checked)}
+                            className="mt-0.5 accent-safran cursor-pointer"
+                          />
+                          <span>Je confirme <strong>détenir les droits</strong> sur cet extrait (ma propre musique ou libre de droits).</span>
+                        </label>
+                        {!styleRefRights && (
+                          <p className="text-[0.65rem] text-henne">Cochez la case pour que l'extrait soit pris en compte.</p>
+                        )}
                         {/* Choix du mode : s'inspirer vs reprendre (masque tant que Suno n'est pas branche) */}
                         {SUNO_UI_ENABLED && (
                           <div className="grid grid-cols-2 gap-2">
