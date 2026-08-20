@@ -71,6 +71,16 @@ async function sendWelcomeEmail(admin: ReturnType<typeof getSupabaseAdmin>, user
   }
 }
 
+// Sur Supabase Edge (Deno), l'isolate est arrete des que la reponse est
+// renvoyee. Une promesse "fire-and-forget" (comme l'envoi de l'email) peut
+// donc etre coupee avant la fin du fetch. EdgeRuntime.waitUntil garde
+// l'isolate vivant jusqu'a la fin de la tache ; a defaut, on l'attend.
+async function deliver(task: Promise<void>) {
+  const er = (globalThis as unknown as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+  if (er?.waitUntil) er.waitUntil(task);
+  else await task;
+}
+
 Deno.serve(async (req: Request) => {
   const opt = handleOptions(req);
   if (opt) return opt;
@@ -91,7 +101,7 @@ Deno.serve(async (req: Request) => {
       if (!existing.welcome_email_sent) {
         const meta = user.user_metadata ?? {};
         const fullName = meta.full_name || meta.name || (user.email ? user.email.split("@")[0] : "Utilisateur");
-        sendWelcomeEmail(admin, user.id, fullName);
+        await deliver(sendWelcomeEmail(admin, user.id, fullName));
       }
       return jsonResponse({ status: "exists" });
     }
@@ -118,7 +128,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: insertErr.message }, 500);
     }
 
-    sendWelcomeEmail(admin, user.id, fullName);
+    await deliver(sendWelcomeEmail(admin, user.id, fullName));
 
     return jsonResponse({ status: "created" });
   } catch (err) {

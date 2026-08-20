@@ -82,5 +82,8 @@ verify_jwt = false
 [functions.save-push-subscription]
 verify_jwt = false
 
+[functions.get-vapid-key]
+verify_jwt = false
+
 [functions.suno-callback]
 verify_jwt = false
